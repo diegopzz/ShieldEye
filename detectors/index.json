@@ -1,0 +1,128 @@
+{
+  "version": "2.0.0",
+  "lastUpdated": "2024-01-15",
+  "categories": {
+    "anti-bot": {
+      "name": "Anti-Bot Solutions",
+      "description": "Advanced bot detection and mitigation services",
+      "detectors": [
+        "akamai",
+        "aws-waf",
+        "cloudflare",
+        "datadome",
+        "f5",
+        "incapsula",
+        "perimeterx",
+        "reblaze",
+        "sucuri"
+      ]
+    },
+    "captcha": {
+      "name": "CAPTCHA Services",
+      "description": "Human verification and challenge services",
+      "detectors": [
+        "recaptcha",
+        "hcaptcha",
+        "funcaptcha",
+        "geetest"
+      ]
+    },
+    "fingerprinting": {
+      "name": "Device Fingerprinting",
+      "description": "Browser and device fingerprinting techniques",
+      "detectors": [
+        "canvas-fingerprinting",
+        "webgl-fingerprinting",
+        "audio-fingerprinting"
+      ]
+    }
+  },
+  "detectors": {
+    "akamai": {
+      "file": "anti-bot/akamai.json",
+      "priority": 100,
+      "enabled": true
+    },
+    "cloudflare": {
+      "file": "anti-bot/cloudflare.json",
+      "priority": 99,
+      "enabled": true
+    },
+    "datadome": {
+      "file": "anti-bot/datadome.json",
+      "priority": 95,
+      "enabled": true
+    },
+    "perimeterx": {
+      "file": "anti-bot/perimeterx.json",
+      "priority": 94,
+      "enabled": true
+    },
+    "incapsula": {
+      "file": "anti-bot/incapsula.json",
+      "priority": 93,
+      "enabled": true
+    },
+    "f5": {
+      "file": "anti-bot/f5.json",
+      "priority": 92,
+      "enabled": true
+    },
+    "aws-waf": {
+      "file": "anti-bot/aws-waf.json",
+      "priority": 90,
+      "enabled": true
+    },
+    "sucuri": {
+      "file": "anti-bot/sucuri.json",
+      "priority": 89,
+      "enabled": true
+    },
+    "reblaze": {
+      "file": "anti-bot/reblaze.json",
+      "priority": 88,
+      "enabled": true
+    },
+    "recaptcha": {
+      "file": "captcha/recaptcha.json",
+      "priority": 98,
+      "enabled": true
+    },
+    "hcaptcha": {
+      "file": "captcha/hcaptcha.json",
+      "priority": 97,
+      "enabled": true
+    },
+    "funcaptcha": {
+      "file": "captcha/funcaptcha.json",
+      "priority": 96,
+      "enabled": true
+    },
+    "geetest": {
+      "file": "captcha/geetest.json",
+      "priority": 90,
+      "enabled": true
+    },
+    "canvas-fingerprinting": {
+      "file": "fingerprinting/canvas-fingerprinting.json",
+      "priority": 80,
+      "enabled": true
+    },
+    "webgl-fingerprinting": {
+      "file": "fingerprinting/webgl-fingerprinting.json",
+      "priority": 79,
+      "enabled": true
+    },
+    "audio-fingerprinting": {
+      "file": "fingerprinting/audio-fingerprinting.json",
+      "priority": 78,
+      "enabled": true
+    }
+  },
+  "metadata": {
+    "totalDetectors": 17,
+    "activeDetectors": 17,
+    "updateUrl": "https://raw.githubusercontent.com/shieldeye/detectors/main/index.json",
+    "checkInterval": 10800000
+  }
+}

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#94A3B8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64748B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="faceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F1F5F9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CBD5E1;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="eyeGlow">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563EB;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Robot Head -->
+  <rect x="24" y="32" width="80" height="64" rx="12" fill="url(#bodyGrad)" stroke="#475569" stroke-width="2"/>
+  
+  <!-- Antenna -->
+  <line x1="64" y1="32" x2="64" y2="16" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="64" cy="14" r="5" fill="#DC2626"/>
+  <circle cx="64" cy="14" r="8" fill="#DC2626" opacity="0.3"/>
+  
+  <!-- Inner Face Panel -->
+  <rect x="32" y="40" width="64" height="48" rx="8" fill="url(#faceGrad)"/>
+  
+  <!-- Eyes -->
+  <g id="left-eye">
+    <circle cx="46" cy="56" r="10" fill="#1E293B"/>
+    <circle cx="46" cy="56" r="8" fill="url(#eyeGlow)"/>
+    <circle cx="48" cy="54" r="3" fill="#FFFFFF"/>
+  </g>
+  
+  <g id="right-eye">
+    <circle cx="82" cy="56" r="10" fill="#1E293B"/>
+    <circle cx="82" cy="56" r="8" fill="url(#eyeGlow)"/>
+    <circle cx="84" cy="54" r="3" fill="#FFFFFF"/>
+  </g>
+  
+  <!-- Digital Mouth -->
+  <rect x="44" y="72" width="40" height="10" rx="3" fill="#1E293B"/>
+  <!-- LED indicators -->
+  <rect x="47" y="75" width="5" height="4" rx="1" fill="#10B981"/>
+  <rect x="54" y="75" width="5" height="4" rx="1" fill="#10B981"/>
+  <rect x="61" y="75" width="5" height="4" rx="1" fill="#10B981"/>
+  <rect x="68" y="75" width="5" height="4" rx="1" fill="#10B981"/>
+  <rect x="75" y="75" width="5" height="4" rx="1" fill="#10B981"/>
+  
+  <!-- Side Panels (Ears) -->
+  <rect x="16" y="52" width="8" height="20" rx="4" fill="#64748B" stroke="#475569" stroke-width="1"/>
+  <rect x="104" y="52" width="8" height="20" rx="4" fill="#64748B" stroke="#475569" stroke-width="1"/>
+  
+  <!-- Neck/Body Connection -->
+  <rect x="54" y="96" width="20" height="12" rx="2" fill="#64748B"/>
+  <rect x="50" y="106" width="28" height="4" rx="2" fill="#475569"/>
+  
+  <!-- Shield Badge Overlay (subtle branding) -->
+  <g transform="translate(64, 46)" opacity="0.2">
+    <path d="M 0,-8 L 6,-4 L 6,4 L 0,8 L -6,4 L -6,-4 Z" fill="#FFC107"/>
+  </g>
+</svg>

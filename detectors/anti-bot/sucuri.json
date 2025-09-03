@@ -1,0 +1,86 @@
+{
+  "id": "sucuri",
+  "name": "Sucuri WAF",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://sucuri.net/",
+  "icon": "sucuri.png",
+  "description": "Sucuri Website Security Platform with WAF and bot protection",
+  "tags": ["waf", "bot-protection", "ddos-protection", "website-security", "cloud-waf"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "sucuri_cloudproxy",
+        "confidence": 95,
+        "description": "Sucuri CloudProxy cookie"
+      },
+      {
+        "name": "sucuri-*",
+        "confidence": 90,
+        "description": "Sucuri prefix cookies"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-Sucuri-ID",
+        "confidence": 95,
+        "description": "Sucuri request identifier"
+      },
+      {
+        "name": "X-Sucuri-Cache",
+        "confidence": 90,
+        "description": "Sucuri cache status"
+      },
+      {
+        "name": "Server",
+        "value": "Sucuri",
+        "confidence": 95,
+        "description": "Sucuri server header"
+      },
+      {
+        "name": "X-Sucuri-Block",
+        "confidence": 100,
+        "description": "Sucuri block indicator"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "sucuri.net",
+        "confidence": 90,
+        "description": "Sucuri domain in resources"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "sucuri",
+        "confidence": 85,
+        "description": "Sucuri reference in scripts"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "meta[name*='sucuri']",
+        "confidence": 85,
+        "description": "Sucuri meta tags"
+      }
+    ]
+  },
+  "mitigation": {
+    "difficulty": "High",
+    "techniques": [
+      "Blacklist/whitelist rules",
+      "Geographic blocking",
+      "Advanced bot detection",
+      "DDoS protection",
+      "Virtual patching",
+      "Zero-day protection"
+    ],
+    "bypass_methods": [
+      "Clean residential IPs",
+      "Human-like behavior patterns",
+      "Request rate limiting"
+    ]
+  }
+}

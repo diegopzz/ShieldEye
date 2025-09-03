@@ -1,0 +1,124 @@
+{
+  "id": "f5",
+  "name": "F5 BIG-IP ASM",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.f5.com/",
+  "icon": "f5.png",
+  "description": "F5 BIG-IP Application Security Manager (ASM) - Web application firewall and bot protection",
+  "tags": ["waf", "bot-protection", "ddos", "application-security"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "TS*",
+        "confidence": 85,
+        "description": "F5 BIG-IP session cookies"
+      },
+      {
+        "name": "BIGipServer*",
+        "confidence": 95,
+        "description": "F5 BIG-IP load balancer cookies"
+      },
+      {
+        "name": "f5_cspm",
+        "confidence": 90,
+        "description": "F5 client-side protection module"
+      },
+      {
+        "name": "F5_*",
+        "confidence": 90,
+        "description": "F5 general cookies"
+      },
+      {
+        "name": "f5avr",
+        "confidence": 85,
+        "description": "F5 Application Visibility and Reporting"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-F5-Auth-Token",
+        "confidence": 100,
+        "description": "F5 authentication token"
+      },
+      {
+        "name": "X-WA-Info",
+        "confidence": 85,
+        "description": "F5 web accelerator info"
+      },
+      {
+        "name": "X-F5-New-Session",
+        "confidence": 90,
+        "description": "F5 new session indicator"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "/f5-w-",
+        "confidence": 85,
+        "description": "F5 web path pattern"
+      },
+      {
+        "pattern": "/f5/",
+        "confidence": 80,
+        "description": "F5 resource path"
+      },
+      {
+        "pattern": "f5-asm-",
+        "confidence": 90,
+        "description": "F5 ASM specific resources"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "f5_cspm",
+        "confidence": 90,
+        "description": "F5 client-side protection module"
+      },
+      {
+        "content": "F5Networks",
+        "confidence": 85,
+        "description": "F5 Networks identifier"
+      },
+      {
+        "content": "_f5_cspm",
+        "confidence": 85,
+        "description": "F5 CSPM variable"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "meta[name*='f5']",
+        "confidence": 80,
+        "description": "F5 meta tags"
+      }
+    ]
+  },
+  "mitigation": {
+    "difficulty": "High",
+    "techniques": [
+      "Rate limiting",
+      "IP reputation",
+      "JavaScript challenges",
+      "Device fingerprinting",
+      "Behavioral analysis",
+      "SSL/TLS fingerprinting"
+    ],
+    "bypass_methods": [
+      "Residential proxies",
+      "Browser automation with stealth",
+      "Session rotation",
+      "Request throttling"
+    ]
+  },
+  "notes": {
+    "detection_tips": [
+      "TS* cookies are commonly used for session persistence",
+      "BIGipServer* cookies indicate load balancing",
+      "F5 ASM often modifies response headers",
+      "Look for encoded values in cookies starting with 'TS'"
+    ]
+  }
+}

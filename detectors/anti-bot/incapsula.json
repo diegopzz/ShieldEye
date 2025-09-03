@@ -1,0 +1,108 @@
+{
+  "id": "incapsula",
+  "name": "Incapsula (Imperva)",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.imperva.com/products/web-application-firewall-waf/",
+  "icon": "imperva.png",
+  "description": "Web application firewall with advanced bot protection",
+  "tags": ["waf", "ddos-protection", "bot-mitigation"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "incap_ses_*",
+        "confidence": 100,
+        "description": "Incapsula session cookies"
+      },
+      {
+        "name": "visid_incap_*",
+        "confidence": 95,
+        "description": "Visitor ID cookie"
+      },
+      {
+        "name": "nlbi_*",
+        "confidence": 90,
+        "description": "Load balancer identifier"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-Iinfo",
+        "confidence": 100,
+        "description": "Incapsula info header"
+      },
+      {
+        "name": "X-CDN",
+        "value": "Incapsula",
+        "confidence": 95,
+        "description": "CDN identifier header"
+      },
+      {
+        "name": "Server",
+        "value": "nginx/1.0.4",
+        "confidence": 80,
+        "description": "Common Incapsula server header"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "incapsula.com",
+        "confidence": 95,
+        "description": "Incapsula domain resources"
+      },
+      {
+        "pattern": "/_Incapsula_Resource",
+        "confidence": 100,
+        "description": "Incapsula resource endpoint"
+      },
+      {
+        "pattern": "/incap_rules.js",
+        "confidence": 90,
+        "description": "Incapsula rules JavaScript"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "_Incapsula",
+        "confidence": 100,
+        "description": "Incapsula global object"
+      },
+      {
+        "content": "incapsula",
+        "confidence": 90
+      },
+      {
+        "content": "IncapRule",
+        "confidence": 85,
+        "description": "Incapsula rule object"
+      }
+    ],
+    "behaviors": {
+      "challengePage": true,
+      "rateLimiting": true,
+      "geoBlocking": true,
+      "ddosProtection": true
+    }
+  },
+  "challengeTypes": {
+    "javascript": {
+      "name": "JavaScript Challenge",
+      "difficulty": "Low-Medium"
+    },
+    "captcha": {
+      "name": "CAPTCHA Challenge",
+      "difficulty": "Medium"
+    },
+    "block": {
+      "name": "Block Page",
+      "difficulty": "High"
+    }
+  },
+  "bypass": {
+    "difficulty": "Medium",
+    "methods": ["Challenge Solving", "IP Rotation", "User Agent Rotation"],
+    "services": ["CapSolver", "2Captcha"]
+  }
+}

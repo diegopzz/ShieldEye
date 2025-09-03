@@ -1,0 +1,79 @@
+{
+  "id": "reblaze",
+  "name": "Reblaze",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.reblaze.com/",
+  "icon": "reblaze.png",
+  "description": "Reblaze cloud-based web security platform with bot management",
+  "tags": ["waf", "bot-protection", "ddos-protection", "cloud-security", "api-security"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "rbzid",
+        "confidence": 95,
+        "description": "Reblaze visitor ID"
+      },
+      {
+        "name": "rbzsessionid",
+        "confidence": 90,
+        "description": "Reblaze session identifier"
+      },
+      {
+        "name": "rbz*",
+        "confidence": 85,
+        "description": "Reblaze prefix cookies"
+      }
+    ],
+    "headers": [
+      {
+        "name": "Server",
+        "value": "Reblaze",
+        "confidence": 95,
+        "description": "Reblaze server header"
+      },
+      {
+        "name": "X-Reblaze-*",
+        "confidence": 90,
+        "description": "Reblaze specific headers"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "reblaze",
+        "confidence": 80,
+        "description": "Reblaze reference in URLs"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "rbzid",
+        "confidence": 85,
+        "description": "Reblaze ID in scripts"
+      },
+      {
+        "content": "reblaze",
+        "confidence": 80,
+        "description": "Reblaze reference"
+      }
+    ]
+  },
+  "mitigation": {
+    "difficulty": "High",
+    "techniques": [
+      "Machine learning bot detection",
+      "Behavioral analysis",
+      "Rate limiting",
+      "Human challenge",
+      "API protection",
+      "Real-time traffic analysis"
+    ],
+    "bypass_methods": [
+      "Distributed requests",
+      "Human-like interaction patterns",
+      "Clean IP rotation"
+    ]
+  }
+}

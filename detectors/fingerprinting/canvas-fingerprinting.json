@@ -1,0 +1,93 @@
+{
+  "id": "canvas-fingerprinting",
+  "name": "Canvas Fingerprinting",
+  "category": "Fingerprinting",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://en.wikipedia.org/wiki/Canvas_fingerprinting",
+  "icon": "custom.png",
+  "description": "HTML5 Canvas-based browser and device fingerprinting",
+  "tags": ["html5", "canvas", "device-fingerprinting", "tracking"],
+  "detection": {
+    "scripts": [
+      {
+        "content": "getContext('2d')",
+        "confidence": 70,
+        "description": "Canvas 2D context creation"
+      },
+      {
+        "content": "canvas.toDataURL",
+        "confidence": 90,
+        "description": "Canvas data extraction"
+      },
+      {
+        "content": "toDataURL()",
+        "confidence": 85,
+        "description": "Convert canvas to data URL"
+      },
+      {
+        "content": "fillText(",
+        "confidence": 60,
+        "description": "Canvas text rendering for fingerprinting"
+      },
+      {
+        "content": "measureText(",
+        "confidence": 60,
+        "description": "Canvas text measurement"
+      },
+      {
+        "content": "getImageData(",
+        "confidence": 80,
+        "description": "Canvas pixel data extraction"
+      },
+      {
+        "content": "strokeText(",
+        "confidence": 60,
+        "description": "Canvas text stroke rendering"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "canvas[width][height]",
+        "confidence": 50,
+        "description": "Canvas elements with specific dimensions"
+      }
+    ],
+    "patterns": {
+      "suspiciousCanvasOperations": [
+        "canvas.width = canvas.height = ",
+        "ctx.textBaseline = 'top'",
+        "ctx.font = '",
+        "winding test",
+        "BrowserLeaks"
+      ]
+    }
+  },
+  "fingerprinting": {
+    "technique": "Canvas Rendering",
+    "data_extracted": [
+      "Font rendering differences",
+      "Anti-aliasing variations", 
+      "Graphics driver signatures",
+      "Hardware acceleration differences"
+    ],
+    "detection_difficulty": "Medium",
+    "blocking_methods": [
+      "Canvas randomization extensions",
+      "Disabling WebGL/Canvas APIs",
+      "Spoofing canvas data"
+    ]
+  },
+  "privacy": {
+    "risk_level": "High",
+    "user_identifiable": true,
+    "persistent": true,
+    "description": "Can uniquely identify users across sessions and websites"
+  },
+  "bypass": {
+    "difficulty": "Medium",
+    "methods": ["Canvas Randomization", "API Spoofing", "Extension Blocking"],
+    "tools": ["Canvas Blocker", "uBlock Origin", "Privacy Badger"]
+  }
+}

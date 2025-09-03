@@ -1,0 +1,129 @@
+{
+  "id": "geetest",
+  "name": "GeeTest",
+  "category": "CAPTCHA",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.geetest.com/",
+  "icon": "geetest.png",
+  "description": "AI-powered behavioral CAPTCHA with slide verification",
+  "tags": ["behavioral", "ai-powered", "slide-verification"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "geetest_*",
+        "confidence": 95,
+        "description": "GeeTest session cookies"
+      },
+      {
+        "name": "gt_*",
+        "confidence": 90,
+        "description": "GeeTest tracking cookies"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-Geetest-Challenge",
+        "confidence": 100,
+        "description": "GeeTest challenge header"
+      },
+      {
+        "name": "X-Geetest-Validate",
+        "confidence": 95,
+        "description": "GeeTest validation header"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "api.geetest.com",
+        "confidence": 100,
+        "description": "GeeTest API endpoint"
+      },
+      {
+        "pattern": "static.geetest.com",
+        "confidence": 100,
+        "description": "GeeTest static resources"
+      },
+      {
+        "pattern": "/gettype.php",
+        "confidence": 95,
+        "description": "GeeTest type endpoint"
+      },
+      {
+        "pattern": "/get.php",
+        "confidence": 90,
+        "description": "GeeTest challenge endpoint"
+      },
+      {
+        "pattern": "/validate.php",
+        "confidence": 90,
+        "description": "GeeTest validation endpoint"
+      },
+      {
+        "pattern": "gt.js",
+        "confidence": 85,
+        "description": "GeeTest JavaScript library"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "window.initGeetest",
+        "confidence": 100,
+        "description": "GeeTest initialization function"
+      },
+      {
+        "content": "geetest",
+        "confidence": 95
+      },
+      {
+        "content": "getGeetest",
+        "confidence": 90
+      },
+      {
+        "content": "geetestUtils",
+        "confidence": 85
+      }
+    ],
+    "dom": [
+      {
+        "selector": ".geetest_*",
+        "confidence": 100,
+        "description": "GeeTest CSS classes"
+      },
+      {
+        "selector": "[data-geetest]",
+        "confidence": 95,
+        "description": "GeeTest data attributes"
+      },
+      {
+        "selector": "#geetest-captcha",
+        "confidence": 90,
+        "description": "Common GeeTest container ID"
+      }
+    ]
+  },
+  "challengeTypes": {
+    "slide": {
+      "name": "Slide Puzzle",
+      "difficulty": "Medium"
+    },
+    "click": {
+      "name": "Click Verification",
+      "difficulty": "Low-Medium"
+    },
+    "word": {
+      "name": "Word Verification",
+      "difficulty": "Medium"
+    },
+    "space": {
+      "name": "Space Game",
+      "difficulty": "Medium-High"
+    }
+  },
+  "bypass": {
+    "difficulty": "Medium-High",
+    "methods": ["Image Recognition", "Behavioral Simulation", "API Manipulation"],
+    "services": ["CapSolver", "HyperSolution", "2Captcha"]
+  }
+}
