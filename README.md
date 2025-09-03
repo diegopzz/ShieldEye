@@ -176,7 +176,7 @@ We welcome contributions! Here's how to help:
 
 ### Currently Detected (35+)
 
-**Anti-Bot**: Akamai, Cloudflare, DataDome, PerimeterX, Incapsula, Reblaze, F5, Kasada
+**Anti-Bot**: Akamai, Cloudflare, DataDome, PerimeterX, Incapsula, Reblaze, F5
 
 **CAPTCHA**: reCAPTCHA, hCaptcha, FunCaptcha/Arkose, GeeTest, Cloudflare Turnstile
 
