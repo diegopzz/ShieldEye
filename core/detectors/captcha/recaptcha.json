@@ -1,0 +1,110 @@
+{
+  "id": "recaptcha",
+  "name": "Google reCAPTCHA",
+  "category": "CAPTCHA",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.google.com/recaptcha/",
+  "icon": "recaptcha.png",
+  "description": "Google's CAPTCHA service for protecting websites from spam and abuse",
+  "tags": ["google", "captcha", "v2", "v3", "enterprise"],
+  "detection": {
+    "urls": [
+      {
+        "pattern": "recaptcha/api",
+        "confidence": 100,
+        "description": "reCAPTCHA API endpoint"
+      },
+      {
+        "pattern": "gstatic.com/recaptcha",
+        "confidence": 95,
+        "description": "Static resources"
+      },
+      {
+        "pattern": "google.com/recaptcha",
+        "confidence": 100
+      },
+      {
+        "pattern": "recaptcha.net",
+        "confidence": 95,
+        "description": "Alternative domain"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "grecaptcha",
+        "confidence": 100,
+        "description": "Global reCAPTCHA object"
+      },
+      {
+        "content": "recaptcha",
+        "confidence": 85
+      },
+      {
+        "content": "g-recaptcha",
+        "confidence": 90,
+        "description": "reCAPTCHA container class"
+      },
+      {
+        "content": "grecaptcha.execute",
+        "confidence": 95,
+        "description": "v3 execution"
+      },
+      {
+        "content": "grecaptcha.render",
+        "confidence": 90,
+        "description": "v2 rendering"
+      }
+    ],
+    "dom": [
+      {
+        "selector": ".g-recaptcha",
+        "confidence": 95,
+        "description": "reCAPTCHA container"
+      },
+      {
+        "selector": "[data-sitekey]",
+        "confidence": 85,
+        "description": "Site key attribute"
+      },
+      {
+        "selector": "iframe[src*='recaptcha']",
+        "confidence": 90,
+        "description": "reCAPTCHA iframe"
+      }
+    ]
+  },
+  "versions": {
+    "v2": {
+      "name": "reCAPTCHA v2",
+      "types": ["checkbox", "invisible"],
+      "identifiers": ["grecaptcha.render", "g-recaptcha"]
+    },
+    "v3": {
+      "name": "reCAPTCHA v3",
+      "types": ["score-based"],
+      "identifiers": ["grecaptcha.execute", "action"]
+    },
+    "enterprise": {
+      "name": "reCAPTCHA Enterprise",
+      "types": ["checkbox", "invisible", "score-based"],
+      "identifiers": ["/enterprise/"]
+    }
+  },
+  "parameters": {
+    "sitekey": {
+      "required": true,
+      "pattern": "[0-9A-Za-z_-]{40}",
+      "location": ["data-sitekey", "k parameter"]
+    },
+    "action": {
+      "required": false,
+      "v3Only": true,
+      "default": "homepage"
+    },
+    "size": {
+      "values": ["normal", "compact", "invisible"]
+    }
+  }
+}

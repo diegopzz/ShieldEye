@@ -1,0 +1,104 @@
+{
+  "id": "webgl-fingerprinting",
+  "name": "WebGL Fingerprinting",
+  "category": "Fingerprinting",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://en.wikipedia.org/wiki/WebGL",
+  "icon": "custom.png",
+  "description": "WebGL-based graphics hardware and driver fingerprinting",
+  "tags": ["webgl", "graphics", "hardware-fingerprinting", "gpu"],
+  "detection": {
+    "scripts": [
+      {
+        "content": "getContext('webgl')",
+        "confidence": 90,
+        "description": "WebGL context creation"
+      },
+      {
+        "content": "getContext('experimental-webgl')",
+        "confidence": 85,
+        "description": "Experimental WebGL context"
+      },
+      {
+        "content": "gl.getParameter(",
+        "confidence": 95,
+        "description": "WebGL parameter extraction"
+      },
+      {
+        "content": "RENDERER",
+        "confidence": 80,
+        "description": "Graphics renderer information"
+      },
+      {
+        "content": "VENDOR",
+        "confidence": 80,
+        "description": "Graphics vendor information"
+      },
+      {
+        "content": "VERSION",
+        "confidence": 70,
+        "description": "WebGL version information"
+      },
+      {
+        "content": "UNMASKED_VENDOR_WEBGL",
+        "confidence": 100,
+        "description": "Unmasked vendor WebGL extension"
+      },
+      {
+        "content": "UNMASKED_RENDERER_WEBGL",
+        "confidence": 100,
+        "description": "Unmasked renderer WebGL extension"
+      },
+      {
+        "content": "getExtension(",
+        "confidence": 75,
+        "description": "WebGL extensions enumeration"
+      },
+      {
+        "content": "getSupportedExtensions(",
+        "confidence": 90,
+        "description": "Supported WebGL extensions list"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "canvas[style*='display: none']",
+        "confidence": 60,
+        "description": "Hidden canvas elements for fingerprinting"
+      }
+    ],
+    "patterns": {
+      "webglFingerprinting": [
+        "gl.getParameter(gl.RENDERER)",
+        "gl.getParameter(gl.VENDOR)",
+        "WEBGL_debug_renderer_info",
+        "gl.getShaderPrecisionFormat",
+        "readPixels"
+      ]
+    }
+  },
+  "fingerprinting": {
+    "technique": "WebGL Rendering",
+    "data_extracted": [
+      "Graphics card model",
+      "Graphics driver version",
+      "Supported WebGL extensions",
+      "Shader capabilities",
+      "Rendering performance metrics"
+    ],
+    "detection_difficulty": "Medium-High",
+    "blocking_methods": [
+      "WebGL spoofing extensions",
+      "Disabling WebGL entirely",
+      "Hardware abstraction"
+    ]
+  },
+  "privacy": {
+    "risk_level": "High",
+    "user_identifiable": true,
+    "persistent": true,
+    "description": "Exposes detailed hardware information that can uniquely identify devices"
+  }
+}

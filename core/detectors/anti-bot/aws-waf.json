@@ -1,0 +1,70 @@
+{
+  "id": "aws-waf",
+  "name": "AWS WAF",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://aws.amazon.com/waf/",
+  "icon": "aws.png",
+  "description": "Amazon Web Services Web Application Firewall with bot control",
+  "tags": ["waf", "bot-protection", "aws", "cloud-security", "ddos-protection"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "aws-waf-token",
+        "confidence": 95,
+        "description": "AWS WAF session token"
+      },
+      {
+        "name": "awswaf*",
+        "confidence": 90,
+        "description": "AWS WAF cookies"
+      }
+    ],
+    "headers": [
+    
+    ],
+    "urls": [
+      {
+        "pattern": "/challenge.js",
+        "confidence": 80,
+        "description": "AWS WAF challenge script"
+      },
+      {
+        "pattern": "awswaf",
+        "confidence": 85,
+        "description": "AWS WAF in URL"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "challenge.js",
+        "confidence": 80,
+        "description": "AWS WAF challenge script"
+      },
+      {
+        "content": "awswaf",
+        "confidence": 85,
+        "description": "AWS WAF reference"
+      }
+    ]
+  },
+  "mitigation": {
+    "difficulty": "High",
+    "techniques": [
+      "Rate limiting",
+      "Geo-blocking",
+      "IP reputation lists",
+      "Regex pattern matching",
+      "Bot Control rule group",
+      "JavaScript challenge"
+    ],
+    "bypass_methods": [
+      "Residential proxies",
+      "Solving JavaScript challenges",
+      "Request throttling",
+      "User-Agent rotation"
+    ]
+  }
+}

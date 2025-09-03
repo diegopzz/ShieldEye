@@ -1,0 +1,59 @@
+{
+  "id": "datadome",
+  "name": "DataDome",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://datadome.co/",
+  "icon": "datadome.png",
+  "description": "Real-time bot protection with machine learning-based detection",
+  "tags": ["machine-learning", "real-time", "api-protection"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "datadome",
+        "confidence": 100,
+        "description": "Main DataDome tracking cookie"
+      },
+      {
+        "name": "dd_s",
+        "confidence": 85,
+        "description": "Session tracking"
+      }
+    ],
+    "headers": [
+    ],
+    "urls": [
+      {
+        "pattern": "datadome.co",
+        "confidence": 95
+      },
+      {
+        "pattern": "/captcha-challenge",
+        "confidence": 100,
+        "description": "Captcha challenge endpoint"
+      },
+      {
+        "pattern": "dd.js",
+        "confidence": 90,
+        "description": "DataDome JavaScript"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "window.DD_RUM",
+        "confidence": 90,
+        "description": "Real User Monitoring"
+      },
+      {
+        "content": "dataDomeOptions",
+        "confidence": 95
+      },
+      {
+        "content": "dd_tags",
+        "confidence": 85
+      }
+    ]
+  }
+}

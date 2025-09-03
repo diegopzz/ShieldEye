@@ -1,13 +1,13 @@
 # 🛡️ ShieldEye - Web Security Detection Extension
 
 <div align="center">
-  <img src="icons/icon128.png" alt="ShieldEye Logo" width="128">
+  <img src="core/icons/icon128.png" alt="ShieldEye Logo" width="128">
   
   [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/diegopzz/shieldeye)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![Chrome](https://img.shields.io/badge/chrome-extension-orange.svg)](https://chrome.google.com)
   [![Edge](https://img.shields.io/badge/edge-compatible-blue.svg)](https://microsoftedge.microsoft.com)
-  [![Security](https://img.shields.io/badge/security-policy-red.svg)](SECURITY.md)
+  [![Security](https://img.shields.io/badge/security-policy-red.svg)](docs/docs/SECURITY.md)
 </div>
 
 ## 🎯 Overview
@@ -40,7 +40,7 @@ ShieldEye is an open-source browser extension that detects and analyzes anti-bot
 
 ### Installation
 
-For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
+For detailed installation instructions, see [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 **Quick Setup:**
 1. **Clone the repository:**
@@ -64,15 +64,27 @@ For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
 
 ```
 ShieldEye/
-├── manifest.json           # Extension configuration
-├── background.js          # Service worker for network monitoring
-├── content.js            # Page analysis script
-├── popup.html/js/css     # Extension UI
-├── detectors/            # Detection configurations
-│   ├── anti-bot/        # Anti-bot detectors
-│   ├── captcha/         # CAPTCHA detectors
-│   └── fingerprinting/  # Fingerprinting detectors
-└── icons/               # Extension icons
+├── core/                     # Extension core files
+│   ├── manifest.json        # Extension configuration
+│   ├── background.js        # Service worker for network monitoring
+│   ├── content.js          # Page analysis script
+│   ├── popup.html/js/css   # Extension UI
+│   ├── detectors/          # Detection configurations
+│   │   ├── anti-bot/      # Anti-bot detectors
+│   │   ├── captcha/       # CAPTCHA detectors
+│   │   └── fingerprinting/# Fingerprinting detectors
+│   ├── icons/             # Extension icons
+│   ├── modules/           # Additional modules
+│   └── scripts/           # Helper scripts
+├── docs/                    # Documentation
+│   ├── INSTALLATION.md    # Installation guide
+│   └── SECURITY.md        # Security policy
+├── .github/               # GitHub templates
+│   ├── ISSUE_TEMPLATE/   # Issue templates
+│   └── pull_request_template.md
+├── README.md             # This file
+├── CONTRIBUTING.md       # Contributing guidelines
+└── LICENSE              # MIT License
 ```
 
 ## 🔧 How It Works
@@ -192,11 +204,11 @@ We welcome contributions! Here's how to help:
 
 ## 📚 Resources
 
-- [Installation Guide](INSTALLATION.md)
+- [Installation Guide](docs/INSTALLATION.md)
 - [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
 - [Web Security Detection Techniques](https://github.com/diegopzz/shieldeye/wiki)
 - [Contributing Guide](CONTRIBUTING.md)
-- [Security Policy](SECURITY.md)
+- [Security Policy](docs/SECURITY.md)
 
 ## 📝 License
 
@@ -212,7 +224,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues**: [GitHub Issues](https://github.com/diegopzz/shieldeye/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions)
-- **Security**: [Security Policy](SECURITY.md)
+- **Security**: [Security Policy](docs/SECURITY.md)
 - **Wiki**: [Documentation](https://github.com/diegopzz/shieldeye/wiki)
 
 ---

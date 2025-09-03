@@ -1,0 +1,57 @@
+{
+  "id": "incapsula",
+  "name": "Incapsula (Imperva)",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.imperva.com/products/web-application-firewall-waf/",
+  "icon": "imperva.png",
+  "description": "Web application firewall with advanced bot protection",
+  "tags": ["waf", "ddos-protection", "bot-mitigation"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "incap_ses_*",
+        "confidence": 100,
+        "description": "Incapsula session cookies"
+      },
+      {
+        "name": "visid_incap_*",
+        "confidence": 95,
+        "description": "Visitor ID cookie"
+      },
+      {
+        "name": "nlbi_*",
+        "confidence": 90,
+        "description": "Load balancer identifier"
+      }
+    ],
+    "headers": [
+
+    ],
+    "urls": [
+      {
+        "pattern": "incapsula.com",
+        "confidence": 95,
+        "description": "Incapsula domain resources"
+      },
+      {
+        "pattern": "/_Incapsula_Resource",
+        "confidence": 100,
+        "description": "Incapsula resource endpoint"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "_Incapsula",
+        "confidence": 100,
+        "description": "Incapsula global object"
+      },
+      {
+        "content": "incapsula",
+        "confidence": 90
+      }
+    ]
+  }
+}

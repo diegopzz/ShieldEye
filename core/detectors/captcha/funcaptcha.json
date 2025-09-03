@@ -1,0 +1,97 @@
+{
+  "id": "funcaptcha",
+  "name": "FunCaptcha (Arkose Labs)",
+  "category": "CAPTCHA",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.arkoselabs.com/",
+  "icon": "funcaptcha.png",
+  "description": "Interactive game-based CAPTCHA by Arkose Labs",
+  "tags": ["interactive", "game-based", "machine-learning"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "_arkose_*",
+        "confidence": 95,
+        "description": "Arkose Labs session cookies"
+      },
+      {
+        "name": "arkose_token",
+        "confidence": 100,
+        "description": "FunCaptcha token cookie"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-Arkose-Challenge",
+        "confidence": 100,
+        "description": "Arkose challenge header"
+      },
+      {
+        "name": "X-Arkose-Token",
+        "confidence": 95,
+        "description": "Arkose token header"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "client-api.arkoselabs.com",
+        "confidence": 100,
+        "description": "Arkose Labs API endpoint"
+      },
+      {
+        "pattern": "api.funcaptcha.com",
+        "confidence": 100,
+        "description": "Legacy FunCaptcha API"
+      },
+      {
+        "pattern": "/fc/api/nojs/",
+        "confidence": 95,
+        "description": "FunCaptcha no-JS API"
+      },
+      {
+        "pattern": "/enforcement.*.js",
+        "confidence": 90,
+        "description": "Arkose enforcement script"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "window.arkoseCallback",
+        "confidence": 100,
+        "description": "Arkose callback function"
+      },
+      {
+        "content": "ArkoseEnforce",
+        "confidence": 95,
+        "description": "Arkose enforcement object"
+      },
+      {
+        "content": "funcaptcha",
+        "confidence": 90
+      },
+      {
+        "content": "setupEnforcement",
+        "confidence": 85
+      }
+    ],
+    "dom": [
+      {
+        "selector": "[data-arkose]",
+        "confidence": 100,
+        "description": "Arkose data attribute"
+      },
+      {
+        "selector": ".arkose-labs",
+        "confidence": 95,
+        "description": "Arkose CSS class"
+      },
+      {
+        "selector": "#FunCaptcha",
+        "confidence": 90,
+        "description": "FunCaptcha container ID"
+      }
+    ]
+  }
+}

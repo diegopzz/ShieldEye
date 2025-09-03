@@ -1,0 +1,69 @@
+{
+  "id": "akamai",
+  "name": "Akamai Bot Manager",
+  "category": "Anti-Bot",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.akamai.com/products/bot-manager",
+  "icon": "akamai.png",
+  "description": "Enterprise-grade bot management solution providing real-time detection and mitigation",
+  "tags": ["enterprise", "cdn", "bot-management"],
+  "detection": {
+    "cookies": [
+      {
+        "name": "_abck",
+        "confidence": 90,
+        "description": "Akamai Bot Manager tracking cookie"
+      },
+      {
+        "name": "ak_bmsc",
+        "confidence": 85,
+        "description": "Bot Manager session cookie"
+      },
+      {
+        "name": "bm_sz",
+        "confidence": 80,
+        "description": "Browser sensor data"
+      },
+      {
+        "name": "bm_sv",
+        "confidence": 75,
+        "description": "Server validation cookie"
+      },
+      {
+        "name": "bm_mi",
+        "confidence": 70,
+        "description": "Machine identification"
+      }
+    ],
+    "headers": [
+    ],
+    "urls": [
+      {
+        "pattern": "/akam/",
+        "confidence": 85,
+        "description": "Akamai Bot Manager endpoint"
+      }
+    ],
+    "scripts": [
+      {
+        "content": "ak_bmsc",
+        "confidence": 80
+      },
+      {
+        "content": "_abck",
+        "confidence": 85
+      },
+      {
+        "content": "bmak.",
+        "confidence": 90,
+        "description": "Bot Manager API namespace"
+      },
+      {
+        "content": "sensor_data",
+        "confidence": 85
+      }
+    ]
+  }
+}
