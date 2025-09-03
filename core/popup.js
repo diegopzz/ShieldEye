@@ -184,6 +184,7 @@ class PopupManager {
     document.getElementById('addHeaderRule').addEventListener('click', () => this.addRuleInput('headerRules', 'header'));
     document.getElementById('addUrlRule').addEventListener('click', () => this.addRuleInput('urlRules', 'url'));
     document.getElementById('addScriptRule').addEventListener('click', () => this.addRuleInput('scriptRules', 'script'));
+    document.getElementById('addDomRule').addEventListener('click', () => this.addRuleInput('domRules', 'dom'));
     
     // Event delegation for remove rule buttons in modal
     document.getElementById('addRuleModal').addEventListener('click', (e) => {
@@ -708,6 +709,8 @@ class PopupManager {
         key = `${match.type}-${match.content}`;
       } else if (match.type === 'url' && match.pattern) {
         key = `${match.type}-${match.pattern}`;
+      } else if (match.type === 'dom' && match.selector) {
+        key = `${match.type}-${match.selector}`;
       } else if (match.type === 'global' && match.property) {
         key = `${match.type}-${match.property}`;
       }
@@ -2152,6 +2155,13 @@ const div = document.createElement('div');
         this.addDetailLine(detailsContainer, 'Content', this.truncateText(content, 80));
         break;
         
+      case 'dom':
+        this.addDetailLine(detailsContainer, 'Selector', match.selector);
+        if (match.count) {
+          this.addDetailLine(detailsContainer, 'Elements Found', match.count);
+        }
+        break;
+        
       default:
         // For unknown types, show all properties
         const cleanMatch = { ...match };
@@ -2216,6 +2226,10 @@ const div = document.createElement('div');
       case 'global':
         category = 'Global';
         details = match.content;
+        break;
+      case 'dom':
+        category = 'DOM Element';
+        details = match.selector + (match.count ? ` (${match.count} found)` : '');
         break;
       default:
         // Format unknown types more nicely
@@ -2794,6 +2808,7 @@ const div = document.createElement('div');
       'header': 'Headers',
       'url': 'URLs',
       'script': 'Scripts',
+      'dom': 'DOM Elements',
       'global': 'Global'
     };
     return typeNames[type] || type;
@@ -2823,6 +2838,10 @@ const div = document.createElement('div');
       case 'global':
         category = 'Global';
         details = match.content;
+        break;
+      case 'dom':
+        category = 'DOM Element';
+        details = match.selector + (match.count ? ` (${match.count} found)` : '');
         break;
       default:
         // Format unknown types more nicely
@@ -3632,6 +3651,7 @@ if ($result) {
       'cookie': 'match-type-cookie',
       'header': 'match-type-header',
       'script': 'match-type-script',
+      'dom': 'match-type-dom',
       'global': 'match-type-global',
       'url': 'match-type-url'
     };
@@ -3650,6 +3670,8 @@ if ($result) {
         return match.content ? `${match.content.substring(0, 20)}... (Global)` : 'Global';
       case 'url':
         return 'URL Pattern';
+      case 'dom':
+        return match.selector ? `${match.selector} (DOM)` : 'DOM Element';
       default:
         return match.type;
     }
@@ -4490,6 +4512,11 @@ if ($result) {
             const confidenceInput = inputGroup.querySelector('.rule-input[data-field="confidence"]');
             if (contentInput) contentInput.value = ruleItem.content || '';
             if (confidenceInput) confidenceInput.value = ruleItem.confidence || 80;
+          } else if (type === 'dom') {
+            const selectorInput = inputGroup.querySelector('.rule-input[data-field="selector"]');
+            const confidenceInput = inputGroup.querySelector('.rule-input[data-field="confidence"]');
+            if (selectorInput) selectorInput.value = ruleItem.selector || '';
+            if (confidenceInput) confidenceInput.value = ruleItem.confidence || 80;
           }
           
           container.appendChild(inputGroup);
@@ -4505,6 +4532,7 @@ if ($result) {
     populateRuleSection('headerRules', rule.headers, 'header');
     populateRuleSection('urlRules', rule.urls, 'url');
     populateRuleSection('scriptRules', rule.scripts, 'script');
+    populateRuleSection('domRules', rule.dom, 'dom');
     
     // Show the modal
     this.showAddRuleModal();
@@ -4697,6 +4725,7 @@ if ($result) {
       document.getElementById('headerRules').innerHTML = this.createRuleInputGroup('header');
       document.getElementById('urlRules').innerHTML = this.createRuleInputGroup('url');
       document.getElementById('scriptRules').innerHTML = this.createRuleInputGroup('script');
+      document.getElementById('domRules').innerHTML = this.createRuleInputGroup('dom');
     }
   }
 
@@ -4715,11 +4744,15 @@ if ($result) {
       `,
       script: `
         <input type="text" class="rule-input" data-field="content" placeholder="Script content to detect">
+      `,
+      dom: `
+        <input type="text" class="rule-input" data-field="selector" placeholder="CSS selector (e.g., .g-recaptcha, [data-sitekey])">
       `
     };
     
     const typeClass = (type === 'url') ? 'url-input-group' : 
-                     (type === 'script') ? 'script-input-group' : '';
+                     (type === 'script') ? 'script-input-group' :
+                     (type === 'dom') ? 'dom-input-group' : '';
     
     return `
       <div class="rule-input-group ${typeClass}">
@@ -4759,11 +4792,12 @@ if ($result) {
       cookies: this.extractRuleInputs('cookieRules', 'cookie'),
       headers: this.extractRuleInputs('headerRules', 'header'),
       urls: this.extractRuleInputs('urlRules', 'url'),
-      scripts: this.extractRuleInputs('scriptRules', 'script')
+      scripts: this.extractRuleInputs('scriptRules', 'script'),
+      dom: this.extractRuleInputs('domRules', 'dom')
     };
     
     // Check if at least one detection method is defined
-    const hasRules = rule.cookies.length > 0 || rule.headers.length > 0 || rule.urls.length > 0 || rule.scripts.length > 0;
+    const hasRules = rule.cookies.length > 0 || rule.headers.length > 0 || rule.urls.length > 0 || rule.scripts.length > 0 || rule.dom.length > 0;
     if (!hasRules) {
       alert('Please define at least one detection method');
       return;
@@ -4853,6 +4887,12 @@ if ($result) {
         const content = contentInput?.value.trim();
         if (content) {
           rules.push({ content, confidence });
+        }
+      } else if (type === 'dom') {
+        const selectorInput = group.querySelector('.rule-input[data-field="selector"]');
+        const selector = selectorInput?.value.trim();
+        if (selector) {
+          rules.push({ selector, confidence });
         }
       }
     });
