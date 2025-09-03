@@ -23,12 +23,12 @@ This guide will walk you through installing ShieldEye browser extension for web 
 
 **Option A: Git Clone (Recommended)**
 ```bash
-git clone https://github.com/[diegopzz]/shieldeye.git
+git clone https://github.com/diegopzz/shieldeye.git
 cd shieldeye
 ```
 
 **Option B: Download ZIP**
-1. Go to the [GitHub repository](https://github.com/[diegopzz]/shieldeye)
+1. Go to the [GitHub repository](https://github.com/diegopzz/shieldeye)
 2. Click the green "Code" button
 3. Select "Download ZIP"
 4. Extract the ZIP file to your desired location
@@ -137,12 +137,12 @@ If you encounter issues not covered here:
    - Look for red error messages related to ShieldEye
 
 2. **Report Issues:**
-   - Visit the [GitHub Issues](https://github.com/[diegopzz]/shieldeye/issues) page
+   - Visit the [GitHub Issues](https://github.com/diegopzz/shieldeye/issues) page
    - Use the Bug Report template
    - Include browser version, OS, and specific error details
 
 3. **Community Support:**
-   - Check [GitHub Discussions](https://github.com/[diegopzz]/shieldeye/discussions)
+   - Check [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions)
    - Ask questions in the Q&A section
 
 ## 🔄 Updating
@@ -219,9 +219,9 @@ ShieldEye is currently not supported on mobile browsers due to extension API lim
 
 ## 🆘 Need Help?
 
-- 📖 **Documentation**: Check the [README](README.md) and [Wiki](https://github.com/[diegopzz]/shieldeye/wiki)
-- 🐛 **Bug Reports**: Use [GitHub Issues](https://github.com/[diegopzz]/shieldeye/issues)
-- 💬 **Discussions**: Join [GitHub Discussions](https://github.com/[diegopzz]/shieldeye/discussions)
+- 📖 **Documentation**: Check the [README](README.md) and [Wiki](https://github.com/diegopzz/shieldeye/wiki)
+- 🐛 **Bug Reports**: Use [GitHub Issues](https://github.com/diegopzz/shieldeye/issues)
+- 💬 **Discussions**: Join [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions)
 - 🔒 **Security**: Review our [Security Policy](SECURITY.md)
 
 ---

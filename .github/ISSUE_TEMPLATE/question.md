@@ -30,4 +30,4 @@ Add any other context that might be helpful in answering your question.
 
 ---
 
-**Note**: For general discussions, consider using [GitHub Discussions](https://github.com/[diegopzz]/shieldeye/discussions) instead of issues.
+**Note**: For general discussions, consider using [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions) instead of issues.

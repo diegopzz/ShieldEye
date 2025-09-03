@@ -86,7 +86,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ```bash
 # Clone your fork
-git clone https://github.com/[diegopzz]/shieldeye.git
+git clone https://github.com/diegopzz/shieldeye.git
 cd shieldeye/ShieldEye
 
 # Load in browser for testing

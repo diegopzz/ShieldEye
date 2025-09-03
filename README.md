@@ -3,7 +3,7 @@
 <div align="center">
   <img src="icons/icon128.png" alt="ShieldEye Logo" width="128">
   
-  [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/[diegopzz]/shieldeye)
+  [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/diegopzz/shieldeye)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![Chrome](https://img.shields.io/badge/chrome-extension-orange.svg)](https://chrome.google.com)
   [![Edge](https://img.shields.io/badge/edge-compatible-blue.svg)](https://microsoftedge.microsoft.com)
@@ -45,7 +45,7 @@ For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md).
 **Quick Setup:**
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/[diegopzz]/shieldeye.git
+   git clone https://github.com/diegopzz/shieldeye.git
    cd shieldeye/ShieldEye
    ```
 
@@ -194,10 +194,9 @@ We welcome contributions! Here's how to help:
 
 - [Installation Guide](INSTALLATION.md)
 - [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
-- [Web Security Detection Techniques](https://github.com/[diegopzz]/shieldeye/wiki)
+- [Web Security Detection Techniques](https://github.com/diegopzz/shieldeye/wiki)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
-- [Changelog](CHANGELOG.md)
 
 ## 📝 License
 
@@ -211,10 +210,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Support
 
-- **Issues**: [GitHub Issues](https://github.com/[diegopzz]/shieldeye/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/[diegopzz]/shieldeye/discussions)
+- **Issues**: [GitHub Issues](https://github.com/diegopzz/shieldeye/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions)
 - **Security**: [Security Policy](SECURITY.md)
-- **Wiki**: [Documentation](https://github.com/[diegopzz]/shieldeye/wiki)
+- **Wiki**: [Documentation](https://github.com/diegopzz/shieldeye/wiki)
 
 ---
 
