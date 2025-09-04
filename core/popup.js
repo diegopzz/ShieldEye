@@ -7,6 +7,7 @@ class PopupManager {
     this.apiUrl = '';
     this.historyLimit = 100;
     this.customRules = [];
+    this.baseDetectors = [];
     this.blacklist = [];
     this.currentTab = 'detection';
     this.currentTabId = null;
@@ -31,11 +32,125 @@ class PopupManager {
     this.allRules = [];
     this.filteredRules = [];
     
+    // Blacklist pagination
+    this.blacklistPage = 1;
+    this.blacklistItemsPerPage = 5;
+    
     // Bind event handlers to prevent issues with removeEventListener
     this.toggleExtensionHandler = () => this.toggleExtension();
     this.toggleThemeHandler = () => this.toggleTheme();
     
     this.init();
+  }
+
+  getCategoryColor(category) {
+    const categoryColors = {
+      'CAPTCHA': '#dc2626',           // Red
+      'Anti-Bot': '#ea580c',          // Orange  
+      'WAF': '#2563eb',               // Blue
+      'CDN': '#059669',               // Green
+      'Fingerprinting': '#7c3aed',    // Purple
+      'Security': '#0891b2',          // Cyan
+      'Analytics': '#ca8a04',         // Yellow
+      'Marketing': '#ec4899',         // Pink
+      'Bot Management': '#f43f5e',    // Rose
+      'DDoS Protection': '#06b6d4',   // Sky
+      'Rate Limiting': '#84cc16',     // Lime
+      'Fraud Detection': '#d946ef'    // Fuchsia
+    };
+    return categoryColors[category] || '#6b7280'; // Gray default
+  }
+
+  getDetectorColor(detectorName) {
+    if (!detectorName) return null;
+    
+    // Unique color for each specific detector/provider
+    const detectorColors = {
+      // Anti-Bot Solutions (with variations)
+      'akamai': '#FF6B35',          // Orange
+      'akamai bot manager': '#FF6B35',
+      'cloudflare': '#F48120',      // CloudFlare Orange
+      'datadome': '#22C55E',        // Green
+      'imperva': '#00BCD4',         // Cyan
+      'imperva incapsula': '#00BCD4',
+      'incapsula': '#00ACC1',       // Cyan variant
+      'perimeterx': '#DC2626',      // Red
+      'perimeter x': '#DC2626',     // Red
+      'reblaze': '#E91E63',         // Pink
+      'sucuri': '#8BC34A',          // Light Green
+      'sucuri waf': '#8BC34A',
+      'aws': '#FF9900',             // AWS Orange
+      'aws shield': '#FF9900',
+      'f5': '#E53935',              // F5 Red
+      'f5 networks': '#E53935',
+      'kasada': '#3F51B5',          // Indigo
+      'radware': '#009688',         // Teal
+      
+      // CAPTCHA Solutions (with variations)
+      'recaptcha': '#4285F4',       // Google Blue
+      'google recaptcha': '#4285F4',
+      'hcaptcha': '#0074BF',        // hCaptcha Blue
+      'funcaptcha': '#9C27B0',      // Purple (Arkose)
+      'funcaptcha arkose labs': '#9C27B0',
+      'arkose': '#9C27B0',
+      'geetest': '#5E35B1',         // Deep Purple
+      'friendly captcha': '#22C55E', // Green
+      'mtcaptcha': '#FF5722',       // Deep Orange
+      'puzzle captcha': '#795548',  // Brown
+      'slider captcha': '#607D8B',  // Blue Gray
+      
+      // WAF Solutions  
+      'akamai waf': '#D32F2F',      // Dark Red
+      'cloudflare waf': '#FF6F00',  // Dark Orange
+      'aws waf': '#FF8F00',         // Amber
+      'azure waf': '#0078D4',       // Azure Blue
+      'barracuda': '#00695C',       // Dark Teal
+      'fortinet': '#EE0000',        // Fortinet Red
+      'modsecurity': '#512DA8',     // Deep Purple
+      
+      // CDN Providers
+      'cloudflare cdn': '#F57C00',  // Orange
+      'fastly': '#FF6D6D',          // Light Red
+      'akamai cdn': '#0097A7',      // Dark Cyan
+      'aws cloudfront': '#FF9100',  // AWS Orange variant
+      'azure cdn': '#0078D4',       // Azure Blue
+      'stackpath': '#1976D2',       // Blue
+      
+      // Bot Management
+      'shape security': '#651FFF',   // Deep Purple
+      'distil networks': '#00E676',  // Light Green
+      'white ops': '#FF1744',        // Red Accent
+      'arkose labs': '#7B1FA2',      // Purple
+      
+      // Fingerprinting
+      'fingerprintjs': '#FF4081',    // Pink Accent
+      'trustdecision': '#536DFE',    // Indigo Accent
+      'seon': '#18FFFF',             // Cyan Accent
+      
+      // Default colors for unknown detectors
+      'custom': '#9E9E9E',           // Gray
+      'unknown': '#757575'           // Dark Gray
+    };
+    
+    // Normalize the detector name (lowercase, remove special chars)
+    const normalizedName = detectorName.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim();
+    
+    // Check for exact match first
+    if (detectorColors[normalizedName]) {
+      return detectorColors[normalizedName];
+    }
+    
+    // Check for partial matches (e.g., "Imperva Incapsula" matches "imperva")
+    for (const [key, color] of Object.entries(detectorColors)) {
+      if (normalizedName.includes(key) || key.includes(normalizedName)) {
+        return color;
+      }
+    }
+    
+    // Fallback to category color
+    return '#6b7280'; // Gray default
   }
 
   async init() {
@@ -51,11 +166,12 @@ class PopupManager {
     this.updateToggleStates();
     
     // Small delay to ensure DOM is fully ready
-    setTimeout(() => {
+    setTimeout(async () => {
+      // Load custom rules first so we have the enabled status for filtering
+      await this.loadCustomRules();
       // Now load the actual data
       this.loadResults();
       this.loadHistory();
-      this.loadCustomRules();
       this.loadAdvancedResults();
     }, 100);
   }
@@ -63,8 +179,7 @@ class PopupManager {
   async loadSettings() {
     const result = await chrome.storage.sync.get([
       'enabled', 'darkMode', 'apiEnabled', 'apiUrl', 'historyLimit', 
-      'autoUpdateEnabled', 'blacklist', 'telemetryEnabled', 'telemetryEndpoint',
-      'cacheEnabled', 'cacheDuration'
+      'autoUpdateEnabled', 'blacklist', 'cacheEnabled', 'cacheDuration'
     ]);
     
     
@@ -83,8 +198,6 @@ class PopupManager {
     this.apiUrl = result.apiUrl || '';
     this.historyLimit = result.historyLimit || 100;
     this.blacklist = result.blacklist || [];
-    this.telemetryEnabled = result.telemetryEnabled || false;
-    this.telemetryEndpoint = result.telemetryEndpoint || 'https://api.shieldeye.io/telemetry';
     this.cacheEnabled = result.cacheEnabled !== false;
     this.cacheDuration = result.cacheDuration || 900;
     
@@ -142,6 +255,18 @@ class PopupManager {
       importRulesFile.addEventListener('change', (e) => this.importRules(e));
     }
     
+    // Export rules functionality
+    const exportRulesBtn = document.getElementById('exportRulesBtn');
+    if (exportRulesBtn) {
+      exportRulesBtn.addEventListener('click', () => this.exportRules());
+    }
+    
+    // Clear rules functionality
+    const clearRulesBtn = document.getElementById('clearRulesBtn');
+    if (clearRulesBtn) {
+      clearRulesBtn.addEventListener('click', () => this.clearAllRules());
+    }
+    
     // Blacklist functionality - setup with safety checks
     const addBlacklistBtn = document.getElementById('addBlacklistBtn');
     const blacklistInput = document.getElementById('blacklistInput');
@@ -166,6 +291,50 @@ class PopupManager {
     document.getElementById('closeRuleModal').addEventListener('click', () => this.hideAddRuleModal());
     document.getElementById('cancelRuleBtn').addEventListener('click', () => this.hideAddRuleModal());
     
+    // Add event delegation for rule toggle buttons
+    const rulesList = document.getElementById('customRulesList');
+    if (rulesList) {
+      rulesList.addEventListener('click', async (e) => {
+        // Check if clicked element is toggle button or its child
+        const toggleBtn = e.target.closest('.rule-disable-toggle');
+        if (toggleBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Prevent double clicks
+          if (toggleBtn.dataset.processing === 'true') {
+            return;
+          }
+          
+          // Find the rule item and get its data
+          const ruleItem = toggleBtn.closest('.custom-rule-item');
+          if (ruleItem) {
+            // Get the rule index from data attribute
+            const ruleIndex = parseInt(ruleItem.dataset.ruleIndex);
+            const ruleName = ruleItem.dataset.ruleName;
+            
+            // Find the rule in our data
+            const rule = this.filteredRules.find(r => r.name === ruleName);
+            if (rule) {
+              // Add visual feedback
+              toggleBtn.dataset.processing = 'true';
+              toggleBtn.style.opacity = '0.5';
+              toggleBtn.style.cursor = 'wait';
+              
+              try {
+                await this.toggleRuleEnabled(rule, ruleIndex);
+              } finally {
+                // Reset visual feedback
+                toggleBtn.dataset.processing = 'false';
+                toggleBtn.style.opacity = '';
+                toggleBtn.style.cursor = '';
+              }
+            }
+          }
+        }
+      });
+    }
+    
     // Reset rules button
     const resetRulesBtn = document.getElementById('resetRulesBtn');
     if (resetRulesBtn) {
@@ -173,7 +342,16 @@ class PopupManager {
         if (confirm('Reset all rules to default? This will remove any custom rules.')) {
           await chrome.storage.local.remove(['customRules', 'rulesVersion']);
           this.customRules = [];
-          await this.populateDefaultRules();
+          await this.loadBaseDetectorsFromBackground();
+          // No overrides after reset, so use all base detectors, sorted by lastUpdated
+          const allUnsortedRules = [...this.baseDetectors, ...this.customRules];
+          this.allRules = allUnsortedRules.sort((a, b) => {
+            const dateA = new Date(a.lastUpdated || a.version || '1970-01-01').getTime();
+            const dateB = new Date(b.lastUpdated || b.version || '1970-01-01').getTime();
+            return dateB - dateA; // Descending order (newest first)
+          });
+          this.filteredRules = [...this.allRules];
+          this.displayRulesPage();
         }
       });
     }
@@ -192,14 +370,7 @@ class PopupManager {
         const btn = e.target.classList.contains('remove-rule-btn') ? e.target : e.target.parentElement;
         const inputGroup = btn.closest('.rule-input-group');
         if (inputGroup) {
-          // Check if this is the last input group in its container
-          const container = inputGroup.parentElement;
-          if (container.children.length > 1) {
-            inputGroup.remove();
-          } else {
-            // Don't remove the last one, just clear it
-            inputGroup.querySelectorAll('input').forEach(input => input.value = '');
-          }
+          inputGroup.remove();
         }
       }
     });
@@ -280,17 +451,6 @@ class PopupManager {
       });
     }
     
-    // Telemetry settings toggle
-    const telemetryToggle = document.getElementById('telemetryToggle');
-    if (telemetryToggle) {
-      telemetryToggle.addEventListener('change', (e) => {
-        const telemetrySettings = document.getElementById('telemetrySettings');
-        if (telemetrySettings) {
-          telemetrySettings.style.display = e.target.checked ? 'block' : 'none';
-        }
-        this.toggleTelemetry(e.target.checked);
-      });
-    }
     
     // Cache management
     const clearCacheBtn = document.getElementById('clearCacheBtn');
@@ -420,10 +580,24 @@ class PopupManager {
     } else {
       const lowerSearchTerm = searchTerm.toLowerCase();
       this.filteredHistory = this.allHistory.filter(item => {
+        // Search in URL
         const url = (item.url || '').toLowerCase();
-        const detections = item.detections.map(d => (d.name || '').toLowerCase()).join(' ');
+        if (url.includes(lowerSearchTerm)) return true;
         
-        return url.includes(lowerSearchTerm) || detections.includes(lowerSearchTerm);
+        // Search in detection names and categories (tags)
+        for (const detection of item.detections) {
+          if (typeof detection === 'string') {
+            // Old format - just category
+            if (detection.toLowerCase().includes(lowerSearchTerm)) return true;
+          } else {
+            // New format - check both name and category
+            const name = (detection.name || '').toLowerCase();
+            const category = (detection.category || '').toLowerCase();
+            if (name.includes(lowerSearchTerm) || category.includes(lowerSearchTerm)) return true;
+          }
+        }
+        
+        return false;
       });
     }
 
@@ -437,7 +611,7 @@ class PopupManager {
   filterRules(searchTerm) {
     if (!this.allRules) return;
 
-    // Filter the rules data array
+    // Filter the rules data array and maintain sorting by lastUpdated
     this.filteredRules = this.allRules.filter(rule => {
       const name = (rule.name || '').toLowerCase();
       const category = (rule.category || '').toLowerCase();
@@ -447,6 +621,10 @@ class PopupManager {
         category.includes(searchTerm.toLowerCase());
       
       return matchesSearch;
+    }).sort((a, b) => {
+      const dateA = new Date(a.lastUpdated || a.version || '1970-01-01').getTime();
+      const dateB = new Date(b.lastUpdated || b.version || '1970-01-01').getTime();
+      return dateB - dateA; // Descending order (newest first)
     });
 
     // Reset to first page after filtering
@@ -854,6 +1032,29 @@ class PopupManager {
       this.loadCustomRules();
     } else if (tabName === 'advanced') {
       this.loadAdvancedTab();
+    } else if (tabName === 'sponsor') {
+      this.loadSponsorTab();
+    }
+  }
+
+  loadSponsorTab() {
+    // Set up sponsor button click handlers
+    const sponsorCTA = document.querySelector('.sponsor-cta');
+    if (sponsorCTA && !sponsorCTA.hasAttribute('data-listener-added')) {
+      sponsorCTA.setAttribute('data-listener-added', 'true');
+      sponsorCTA.addEventListener('click', () => {
+        // Open sponsor website or show more info
+        window.open('https://example.com/sponsor-a', '_blank');
+      });
+    }
+
+    const contactBtn = document.querySelector('.contact-sponsor-btn');
+    if (contactBtn && !contactBtn.hasAttribute('data-listener-added')) {
+      contactBtn.setAttribute('data-listener-added', 'true');
+      contactBtn.addEventListener('click', () => {
+        // Open email or contact form
+        window.open('mailto:sponsors@shieldeye.com?subject=Sponsorship Inquiry', '_blank');
+      });
     }
   }
 
@@ -945,7 +1146,7 @@ class PopupManager {
       if (response.stats) {
         const statsEl = document.getElementById('cacheStats');
         if (statsEl) {
-          statsEl.textContent = `Cached: ${response.stats.detectionResults} sites, ${response.stats.telemetryQueue} telemetry records`;
+          statsEl.textContent = `Cached: ${response.stats.detectionResults} sites`;
         }
       }
     } catch (error) {
@@ -1348,6 +1549,13 @@ class PopupManager {
       return;
     }
     
+    // Check if URL is blacklisted
+    if (await this.isUrlBlacklisted(tab.url)) {
+      this.showBlacklistedState();
+      this.updateTabInfo(tab.url);
+      return;
+    }
+    
     try {
       // Try to get existing results first
       const response = await chrome.runtime.sendMessage({
@@ -1392,6 +1600,37 @@ class PopupManager {
     }
   }
 
+  async isUrlBlacklisted(url) {
+    if (!url) return false;
+    
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace('www.', '');
+      
+      // Load blacklist from storage
+      const result = await chrome.storage.sync.get(['blacklist']);
+      const blacklist = result.blacklist || [];
+      
+      // Check if hostname is in blacklist
+      for (const domain of blacklist) {
+        if (domain.startsWith('*.')) {
+          // Wildcard domain
+          const baseDomain = domain.substring(2);
+          if (hostname.endsWith(baseDomain) || hostname === baseDomain.replace('*.', '')) {
+            return true;
+          }
+        } else if (hostname === domain) {
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking blacklist:', error);
+      return false;
+    }
+  }
+
   isValidUrl(url) {
     if (!url) return false;
     
@@ -1426,12 +1665,70 @@ class PopupManager {
     return true;
   }
   
+  showBlacklistedState() {
+    this.hideAllDetectionStates();
+    
+    // Create or update blacklisted state message
+    let blacklistedState = document.getElementById('blacklistedState');
+    if (!blacklistedState) {
+      const detectionTab = document.getElementById('detectionTab');
+      if (!detectionTab) {
+        console.error('detectionTab element not found');
+        return;
+      }
+      
+      blacklistedState = document.createElement('div');
+      blacklistedState.id = 'blacklistedState';
+      blacklistedState.className = 'empty-state blacklisted-state';
+      blacklistedState.innerHTML = `
+        <div class="blacklisted-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" style="opacity: 0.8;">
+            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11.6 16,12.3 16,13.3V17C16,18.1 15.1,19 14,19H10C8.9,19 8,18.1 8,17V13.3C8,12.3 8.6,11.6 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.9 10.5,9.8V11H13.5V9.8C13.5,8.9 12.8,8.2 12,8.2Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3 style="color: var(--primary); font-weight: 600;">Domain Excluded</h3>
+        <p style="color: var(--text-primary); margin: 10px 0;">This domain is in your exclusion list</p>
+        <p class="text-secondary" style="font-size: 12px;">ShieldEye detection is disabled for this website</p>
+        <button class="remove-from-blacklist-btn" style="
+          margin-top: 16px;
+          padding: 8px 20px;
+          background: var(--primary);
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        ">
+          Remove from Exclusion List
+        </button>
+      `;
+      detectionTab.appendChild(blacklistedState);
+      
+      // Add event listener for remove button
+      const removeBtn = blacklistedState.querySelector('.remove-from-blacklist-btn');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', async () => {
+          await this.removeCurrentPageFromBlacklist();
+        });
+      }
+    }
+    blacklistedState.style.display = 'block';
+  }
+
   showInvalidUrlState() {
     this.hideAllDetectionStates();
     
     // Create or update invalid URL message
     let invalidUrlState = document.getElementById('invalidUrlState');
     if (!invalidUrlState) {
+      const detectionTab = document.getElementById('detectionTab');
+      if (!detectionTab) {
+        console.error('detectionTab element not found');
+        return;
+      }
+      
       invalidUrlState = document.createElement('div');
       invalidUrlState.id = 'invalidUrlState';
       invalidUrlState.className = 'empty-state';
@@ -1441,7 +1738,7 @@ class PopupManager {
         <p>This extension cannot analyze browser system pages, extension pages, or local files.</p>
         <p class="text-secondary">Try visiting a regular website to see detections.</p>
       `;
-      document.getElementById('detectionContent').appendChild(invalidUrlState);
+      detectionTab.appendChild(invalidUrlState);
     }
     invalidUrlState.style.display = 'block';
   }
@@ -1514,9 +1811,60 @@ class PopupManager {
     document.getElementById('disabledState').style.display = 'block';
   }
 
+  filterDisabledRules(results) {
+    // If no rules are loaded yet, check if we have at least base detectors or custom rules
+    if ((!this.allRules || this.allRules.length === 0) && 
+        (!this.baseDetectors || this.baseDetectors.length === 0) && 
+        (!this.customRules || this.customRules.length === 0)) {
+      // No rules loaded at all, return all results for now
+      console.log('No rules loaded yet, returning all results');
+      return results;
+    }
+    
+    // Use allRules if available, otherwise combine base detectors and custom rules
+    const rulesToCheck = this.allRules && this.allRules.length > 0 
+      ? this.allRules 
+      : [...(this.baseDetectors || []), ...(this.customRules || [])];
+    
+    // Create a map of rule names to their enabled status
+    const ruleStatusMap = new Map();
+    rulesToCheck.forEach(rule => {
+      // Use lowercase for case-insensitive comparison
+      const ruleName = rule.name.toLowerCase();
+      ruleStatusMap.set(ruleName, rule.enabled !== false);
+    });
+    
+    // Filter results to only include those from enabled rules
+    const filtered = results.filter(detection => {
+      const detectionName = (detection.name || '').toLowerCase();
+      
+      // If the rule exists in our map, check if it's enabled
+      if (ruleStatusMap.has(detectionName)) {
+        const isEnabled = ruleStatusMap.get(detectionName);
+        if (!isEnabled) {
+          console.log(`Filtering out disabled detection: ${detection.name}`);
+        }
+        return isEnabled;
+      }
+      
+      // If the rule is not found in our map (shouldn't happen normally),
+      // include it by default to avoid losing detections
+      console.log(`Detection not found in rules: ${detection.name}, including by default`);
+      return true;
+    });
+    
+    console.log(`Filtered ${results.length} detections to ${filtered.length} (${results.length - filtered.length} disabled rules removed)`);
+    return filtered;
+  }
+
   showResults() {
     this.hideAllDetectionStates();
-    document.getElementById('detectionResults').style.display = 'block';
+    const detectionResults = document.getElementById('detectionResults');
+    if (detectionResults) {
+      detectionResults.style.display = 'block';
+    } else {
+      console.error('detectionResults element not found');
+    }
     
     // Ensure refresh button is visible when results are shown
     const refreshBtn = document.getElementById('refreshBtn');
@@ -1539,6 +1887,12 @@ class PopupManager {
       invalidUrlState.style.display = 'none';
     }
     
+    // Hide blacklisted state if it exists
+    const blacklistedState = document.getElementById('blacklistedState');
+    if (blacklistedState) {
+      blacklistedState.style.display = 'none';
+    }
+    
     // Hide refresh button when no results
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) {
@@ -1549,14 +1903,17 @@ class PopupManager {
   updateResultsDisplay() {
     const countBadge = document.getElementById('detectionCount');
     
+    // Filter out disabled rules from the detection results
+    const enabledResults = this.filterDisabledRules(this.currentResults);
+    
     // Store detection data for pagination
-    this.allDetections = [...this.currentResults];
+    this.allDetections = [...enabledResults];
     this.filteredDetections = [...this.allDetections];
     
     // Reset to first page
     this.detectionsPage = 1;
     
-    countBadge.textContent = this.currentResults.length;
+    countBadge.textContent = enabledResults.length;
     
     // Update detection label with site name and format
     const detectionLabel = document.getElementById('detectionLabel');
@@ -1600,31 +1957,12 @@ const div = document.createElement('div');
     if (result.icon && result.icon.startsWith('custom_icon_')) {
       iconSrc = await this.getProviderIcon(result.icon);
     } else {
-      // Use the icon from the result or map based on detector name
-      let iconFile = result.icon;
+      // Use the icon from the result or default to custom.png
+      let iconFile = result.icon || 'custom.png';
       
-      // If no icon specified or it's invalid, try to map common detector names to their icon files
-      if (!iconFile || iconFile === 'custom.svg' || iconFile === 'undefined') {
-        const nameToIcon = {
-          'akamai bot manager': 'akamai.png',
-          'cloudflare': 'cloudflare.png', 
-          'cloudflare bot management': 'cloudflare.png',
-          'datadome': 'datadome.png',
-          'google recaptcha': 'recaptcha.png',
-          'recaptcha': 'recaptcha.png',
-          'hcaptcha': 'hcaptcha.png',
-          'imperva': 'imperva.png',
-          'incapsula': 'imperva.png',
-          'perimeterx': 'perimeterx.png',
-          'aws waf': 'aws.png',
-          'f5 big-ip asm': 'f5.png',
-          'webgl fingerprinting': 'custom.png',
-          'canvas fingerprinting': 'custom.png',
-          'audio fingerprinting': 'custom.png'
-        };
-        
-        const lowerName = (result.name || result.key || '').toLowerCase();
-        iconFile = nameToIcon[lowerName] || 'custom.png';
+      // If icon is invalid, use custom.png  
+      if (iconFile === 'custom.svg' || iconFile === 'undefined' || iconFile === undefined || iconFile === 'null') {
+        iconFile = 'custom.png';
       }
       
       iconSrc = chrome.runtime.getURL(`icons/providers/${iconFile}`);
@@ -3525,6 +3863,7 @@ if ($result) {
   // Blacklist Management
   async loadBlacklistUI() {
     const container = document.getElementById('blacklistItems');
+    const paginationContainer = document.getElementById('blacklistPagination');
     if (!container) {
       return;
     }
@@ -3534,18 +3873,29 @@ if ($result) {
     this.blacklist = result.blacklist || [];
     
     container.innerHTML = '';
+    if (paginationContainer) {
+      paginationContainer.innerHTML = '';
+    }
     
     if (this.blacklist.length === 0) {
       container.innerHTML = '<div class="empty-blacklist" style="color: var(--text-muted); padding: 10px; text-align: center;">No domains in blacklist</div>';
       return;
     }
     
-    this.blacklist.forEach((domain, index) => {
+    // Calculate pagination
+    const totalItems = this.blacklist.length;
+    const totalPages = Math.ceil(totalItems / this.blacklistItemsPerPage);
+    const startIndex = (this.blacklistPage - 1) * this.blacklistItemsPerPage;
+    const endIndex = Math.min(startIndex + this.blacklistItemsPerPage, totalItems);
+    
+    // Display items for current page
+    for (let i = startIndex; i < endIndex; i++) {
+      const domain = this.blacklist[i];
       const item = document.createElement('div');
       item.className = 'blacklist-item';
       item.innerHTML = `
         <span class="blacklist-domain">${domain}</span>
-        <button class="remove-blacklist-btn" data-index="${index}">
+        <button class="remove-blacklist-btn" data-index="${i}">
           <svg width="12" height="12" viewBox="0 0 24 24">
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
           </svg>
@@ -3553,11 +3903,48 @@ if ($result) {
       `;
       
       item.querySelector('.remove-blacklist-btn').addEventListener('click', () => {
-        this.removeBlacklistItem(index);
+        this.removeBlacklistItem(i);
       });
       
       container.appendChild(item);
-    });
+    }
+    
+    // Add pagination controls if needed
+    if (totalPages > 1 && paginationContainer) {
+      paginationContainer.innerHTML = `
+        <button class="page-btn ${this.blacklistPage === 1 ? 'disabled' : ''}" id="prevBlacklistPage" ${this.blacklistPage === 1 ? 'disabled' : ''}>
+          <svg width="14" height="14" viewBox="0 0 24 24">
+            <path d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z" fill="currentColor"/>
+          </svg>
+        </button>
+        <span class="page-info">
+          Page ${this.blacklistPage} of ${totalPages} (${totalItems} items)
+        </span>
+        <button class="page-btn ${this.blacklistPage === totalPages ? 'disabled' : ''}" id="nextBlacklistPage" ${this.blacklistPage === totalPages ? 'disabled' : ''}>
+          <svg width="14" height="14" viewBox="0 0 24 24">
+            <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" fill="currentColor"/>
+          </svg>
+        </button>
+      `;
+      
+      // Add event listeners for pagination
+      const prevBtn = paginationContainer.querySelector('#prevBlacklistPage');
+      const nextBtn = paginationContainer.querySelector('#nextBlacklistPage');
+      
+      if (prevBtn && this.blacklistPage > 1) {
+        prevBtn.addEventListener('click', () => {
+          this.blacklistPage--;
+          this.loadBlacklistUI();
+        });
+      }
+      
+      if (nextBtn && this.blacklistPage < totalPages) {
+        nextBtn.addEventListener('click', () => {
+          this.blacklistPage++;
+          this.loadBlacklistUI();
+        });
+      }
+    }
   }
 
   async addBlacklistItem() {
@@ -3644,6 +4031,37 @@ if ($result) {
     
     // Notify background script
     chrome.runtime.sendMessage({ action: 'updateBlacklist', blacklist: this.blacklist });
+  }
+  
+  async removeCurrentPageFromBlacklist() {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.url) return;
+    
+    try {
+      const url = new URL(tab.url);
+      const domain = url.hostname.replace('www.', '');
+      
+      // Load current blacklist
+      const result = await chrome.storage.sync.get(['blacklist']);
+      this.blacklist = result.blacklist || [];
+      
+      // Remove domain from blacklist
+      const index = this.blacklist.indexOf(domain);
+      if (index > -1) {
+        this.blacklist.splice(index, 1);
+        await chrome.storage.sync.set({ blacklist: this.blacklist });
+        
+        // Notify background script
+        chrome.runtime.sendMessage({ action: 'updateBlacklist', blacklist: this.blacklist });
+        
+        // Reload the page analysis
+        this.showToast(`Removed ${domain} from exclusion list`);
+        await this.loadResults();
+      }
+    } catch (error) {
+      console.error('Error removing from blacklist:', error);
+      this.showToast('Error removing from exclusion list', 'error');
+    }
   }
 
   getMatchTypeClass(type) {
@@ -3803,7 +4221,169 @@ if ($result) {
     }
   }
 
-  // Export methods removed
+  async exportRules() {
+    try {
+      // Get all rules (base + edited + custom) from the merged data
+      const exportData = [];
+      
+      // Export all rules from the allRules array which includes base detectors and custom rules
+      for (const rule of this.allRules) {
+        const exportRule = {
+          name: rule.name,
+          category: rule.category,
+          icon: rule.icon || 'custom.png',
+          color: rule.color,
+          enabled: rule.enabled !== false,
+          lastUpdated: rule.lastUpdated || new Date().toISOString(),
+          cookies: rule.cookies || [],
+          headers: rule.headers || [],
+          urls: rule.urls || [],
+          scripts: rule.scripts || [],
+          dom: rule.dom || []
+        };
+        
+        // Add additional fields if they exist
+        if (rule.overridesDefault) {
+          exportRule.overridesDefault = rule.overridesDefault;
+        }
+        if (rule.isDefault) {
+          exportRule.isDefault = rule.isDefault;
+        }
+        if (rule.id) {
+          exportRule.id = rule.id;
+        }
+        
+        exportData.push(exportRule);
+      }
+      
+      // Create JSON string with proper formatting
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      
+      // Create blob and download
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shieldeye_rules_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      this.showToast(`Exported ${exportData.length} rules successfully`);
+    } catch (error) {
+      console.error('Failed to export rules:', error);
+      this.showToast('Failed to export rules', 'error');
+    }
+  }
+
+  async clearAllRules() {
+    try {
+      // Show custom confirmation modal
+      const confirmed = await this.showConfirmDialog(
+        'Clear All Rules',
+        'Are you sure you want to clear ALL rules? This will reset all custom rules and edited base detectors. This action cannot be undone.'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+      
+      // Clear custom rules from storage
+      await chrome.storage.sync.set({ customRules: [] });
+      
+      // Send message to background to reload detectors (will reload base detectors without any custom overrides)
+      await chrome.runtime.sendMessage({ action: 'reloadCustomRules' });
+      
+      // Reload the rules display
+      this.allRules = [];
+      this.filteredRules = [];
+      this.rulesPage = 1;
+      await this.loadCustomRules();
+      
+      // Show success notification
+      this.showNotification('All rules cleared successfully', 'success');
+      
+    } catch (error) {
+      console.error('Failed to clear rules:', error);
+      this.showNotification('Failed to clear rules', 'error');
+    }
+  }
+
+  async toggleRuleEnabled(rule, index) {
+    try {
+      // Toggle the enabled state
+      rule.enabled = rule.enabled === false ? true : false;
+      
+      // If it's a base detector (index === -1), we need to save it as an override
+      if (index === -1) {
+        // Get current custom rules - use local storage for consistency
+        const result = await chrome.storage.local.get(['customRules']);
+        const customRules = result.customRules || [];
+        
+        // Check if we already have an override for this base detector
+        const existingOverrideIndex = customRules.findIndex(r => r.overridesDefault === rule.id);
+        
+        if (existingOverrideIndex !== -1) {
+          // Update existing override
+          customRules[existingOverrideIndex].enabled = rule.enabled;
+        } else {
+          // Create new override for base detector
+          const override = {
+            ...rule,
+            overridesDefault: rule.id,
+            enabled: rule.enabled
+          };
+          customRules.push(override);
+        }
+        
+        await chrome.storage.local.set({ customRules });
+      } else {
+        // It's a custom rule, update it directly
+        this.customRules[index].enabled = rule.enabled;
+        await chrome.storage.local.set({ customRules: this.customRules });
+      }
+      
+      // Send message to background to reload rules
+      await chrome.runtime.sendMessage({ action: 'reloadCustomRules' });
+      
+      // Also send message to content script to re-analyze with new rules
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs[0]) {
+          await chrome.tabs.sendMessage(tabs[0].id, { action: 'reloadCustomRules' });
+        }
+      } catch (err) {
+        // Content script might not be loaded, ignore
+      }
+      
+      // Update UI with smooth transition
+      const ruleElement = document.querySelector(`[data-rule-name="${rule.name}"]`);
+      if (ruleElement) {
+        // Add transition class
+        ruleElement.style.transition = 'opacity 0.3s ease';
+        ruleElement.style.opacity = '0.5';
+        
+        setTimeout(async () => {
+          // Update UI
+          await this.loadCustomRules();
+          
+          // Show notification
+          const status = rule.enabled === false ? 'disabled' : 'enabled';
+          this.showToast(`Rule "${rule.name}" ${status}`, 'success');
+        }, 300);
+      } else {
+        // Fallback if element not found
+        await this.loadCustomRules();
+        const status = rule.enabled === false ? 'disabled' : 'enabled';
+        this.showToast(`Rule "${rule.name}" ${status}`, 'success');
+      }
+      
+    } catch (error) {
+      console.error('Failed to toggle rule:', error);
+      this.showToast('Failed to toggle rule', 'error');
+    }
+  }
 
   async importRules(event) {
     const file = event.target.files[0];
@@ -3907,33 +4487,117 @@ if ($result) {
     }
   }
 
+  // Load base detectors from background.js for UI display
+  async loadBaseDetectorsFromBackground() {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getDetectors' });
+      if (response && response.success && response.detectors) {
+        this.baseDetectors = [];
+        
+        // Check if detectors exist
+        const detectors = response.detectors.detectors || {};
+        if (Object.keys(detectors).length === 0) {
+          console.warn('No detectors found in response');
+        }
+        
+        for (const [detectorId, detector] of Object.entries(detectors)) {
+          // Skip if detector doesn't have required properties
+          if (!detector.name) continue;
+          
+          // Get unique detector color
+          const detectorColor = this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category) || '#6b7280';
+          
+          const rule = {
+            id: detectorId,
+            name: detector.name,
+            category: detector.category || 'Unknown',
+            icon: detector.icon || 'custom.png',
+            color: detector.color || detectorColor,
+            enabled: detector.enabled !== false,
+            isDefault: true, // Mark as default for UI purposes only
+            lastUpdated: detector.lastUpdated || detector.version || new Date().toISOString(),
+            cookies: detector.detection?.cookies || [],
+            headers: detector.detection?.headers || [],
+            urls: detector.detection?.urls || [],
+            scripts: detector.detection?.scripts || [],
+            dom: detector.detection?.dom || [],
+            patterns: detector.detection?.patterns || {},
+            detection: detector.detection || {}
+          };
+          this.baseDetectors.push(rule);
+        }
+        
+        // Successfully loaded base detectors
+      } else {
+        console.warn('Failed to get detectors from background.js:', response);
+        this.baseDetectors = [];
+      }
+    } catch (error) {
+      console.error('Error loading base detectors from background:', error);
+      this.baseDetectors = [];
+    }
+  }
+
   // Custom Rules Management
   async loadCustomRules() {
     try {
       const result = await chrome.storage.local.get(['customRules', 'rulesVersion']);
       this.customRules = result.customRules || [];
       
-      // Force reset if version is outdated or icons are missing
-      const CURRENT_VERSION = 5; // Increment this to force reset - Added all missing detectors, removed detectors.json
-      const needsReset = result.rulesVersion !== CURRENT_VERSION || 
-                        this.customRules.some(rule => rule.isDefault && !rule.icon) ||
-                        this.customRules.length === 0;
+      // Ensure all custom rules have proper colors
+      this.customRules = this.customRules.map(rule => {
+        if (!rule.color) {
+          rule.color = this.getDetectorColor(rule.name) || this.getCategoryColor(rule.category) || '#6b7280';
+        }
+        return rule;
+      });
       
-      // Pre-populate with default detectors if reset needed
+      // Force reset to remove old custom rules created from base detectors
+      const CURRENT_VERSION = 6; // Increment this to clear old conflicting custom rules
+      const needsReset = result.rulesVersion !== CURRENT_VERSION;
+      
       if (needsReset) {
-        this.customRules = [];
-        await this.populateDefaultRules();
-        await chrome.storage.local.set({ rulesVersion: CURRENT_VERSION });
+        // Clearing old custom rules that conflict with base detectors
+        // Only keep actual user-created custom rules
+        this.customRules = (result.customRules || []).filter(rule => !rule.isDefault);
+        
+        // Get base detectors from background.js for UI display
+        await this.loadBaseDetectorsFromBackground();
+        
+        await chrome.storage.local.set({ 
+          customRules: this.customRules,
+          rulesVersion: CURRENT_VERSION 
+        });
       } else {
-        // Update existing default rules with icons if missing
-        await this.updateDefaultRulesIcons();
-        // Also ensure all rules have at least a default icon
-        await this.ensureAllRulesHaveIcons();
+        // No reset needed, but still load base detectors for UI
+        await this.loadBaseDetectorsFromBackground();
       }
       
-      // Store all rules and initialize filtered rules
-      this.allRules = [...this.customRules];
-      this.filteredRules = [...this.customRules];
+      // Always ensure base detectors are loaded
+      if (!this.baseDetectors.length) {
+        await this.loadBaseDetectorsFromBackground();
+      }
+      
+      // Filter out base detectors that have custom overrides
+      const customOverrides = new Set(
+        this.customRules
+          .filter(rule => rule.overridesDefault)
+          .map(rule => rule.overridesDefault)
+      );
+      
+      const filteredBaseDetectors = this.baseDetectors.filter(baseRule => {
+        const ruleId = baseRule.id || baseRule.name;
+        return !customOverrides.has(ruleId);
+      });
+      
+      // Store all rules and initialize filtered rules, sorted by lastUpdated (newest first)
+      const allUnsortedRules = [...filteredBaseDetectors, ...this.customRules];
+      this.allRules = allUnsortedRules.sort((a, b) => {
+        const dateA = new Date(a.lastUpdated || a.version || '1970-01-01').getTime();
+        const dateB = new Date(b.lastUpdated || b.version || '1970-01-01').getTime();
+        return dateB - dateA; // Descending order (newest first)
+      });
+      this.filteredRules = [...this.allRules];
       
       // Reset to page 1
       this.rulesPage = 1;
@@ -3976,7 +4640,17 @@ if ($result) {
     const elements = [];
     for (let i = startIndex; i < endIndex; i++) {
       const rule = this.filteredRules[i];
-      const originalIndex = this.customRules.indexOf(rule);
+      
+      // Calculate the correct index for editing
+      let originalIndex;
+      if (rule.isDefault) {
+        // Base detectors use -1 to indicate they're not in customRules
+        originalIndex = -1;
+      } else {
+        // Custom rules use their actual index in customRules
+        originalIndex = this.customRules.indexOf(rule);
+      }
+      
       elements.push(this.createCustomRuleElement(rule, originalIndex));
     }
     
@@ -4346,13 +5020,43 @@ if ($result) {
 
   async createCustomRuleElement(rule, index) {
     const div = document.createElement('div');
-    div.className = 'custom-rule-item';
+    div.className = `custom-rule-item ${rule.enabled === false ? 'disabled' : ''}`;
     
+    // Add data attributes for event delegation
+    div.dataset.ruleIndex = index;
+    div.dataset.ruleName = rule.name;
+    
+    // Detection properties can be directly on rule or nested in detection object
     const methods = [];
-    if (rule.cookies && rule.cookies.length) methods.push('Cookies');
-    if (rule.headers && rule.headers.length) methods.push('Headers');
-    if (rule.urls && rule.urls.length) methods.push('URLs');
-    if (rule.scripts && rule.scripts.length) methods.push('Scripts');
+    
+    // Check both direct properties and nested detection object
+    const detection = rule.detection || rule;
+    
+    // Check for detection methods
+    if ((detection.cookies && detection.cookies.length > 0) || 
+        (rule.cookies && rule.cookies.length > 0)) {
+      methods.push('COOKIES');
+    }
+    if ((detection.headers && detection.headers.length > 0) || 
+        (rule.headers && rule.headers.length > 0)) {
+      methods.push('HEADERS');
+    }
+    if ((detection.urls && detection.urls.length > 0) || 
+        (rule.urls && rule.urls.length > 0)) {
+      methods.push('URLs');
+    }
+    if ((detection.scripts && detection.scripts.length > 0) || 
+        (rule.scripts && rule.scripts.length > 0)) {
+      methods.push('SCRIPTS');
+    }
+    if ((detection.dom && detection.dom.length > 0) || 
+        (rule.dom && rule.dom.length > 0)) {
+      methods.push('DOM');
+    }
+    if ((detection.patterns && Object.keys(detection.patterns).length > 0) || 
+        (rule.patterns && Object.keys(rule.patterns).length > 0)) {
+      methods.push('PATTERNS');
+    }
     
     const defaultBadge = rule.isDefault ? '<span class="default-rule-badge">Built-in</span>' : '';
     
@@ -4408,6 +5112,7 @@ if ($result) {
           ${defaultBadge}
         </div>
         <div class="rule-actions">
+          <div class="rule-disable-toggle ${rule.enabled === false ? 'disabled' : ''}" title="${rule.enabled === false ? 'Enable rule' : 'Disable rule'}"></div>
           <button class="edit-rule-btn" title="Edit rule">
             <svg width="14" height="14" viewBox="0 0 24 24">
               <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
@@ -4420,9 +5125,10 @@ if ($result) {
           </button>
         </div>
       </div>
-      <div class="rule-category" ${categoryStyle}>${rule.category}</div>
+      ${rule.enabled === false ? '<div class="disabled-overlay">DISABLED</div>' : ''}
+      <div class="rule-category" ${categoryStyle}>${rule.name}</div>
       <div class="rule-methods">
-        ${methods.map(method => `<span class="rule-method-badge">${method}</span>`).join('')}
+        ${methods.length > 0 ? methods.map(method => `<span class="rule-method-badge">${method}</span>`).join('') : '<span class="rule-method-badge" style="opacity: 0.5">No detection methods</span>'}
       </div>
       <div class="rule-updated">
         <span class="rule-updated-label">Last Updated:</span>
@@ -4431,17 +5137,31 @@ if ($result) {
     `;
     
     const deleteBtn = div.querySelector('.delete-rule-btn');
-    deleteBtn.addEventListener('click', () => this.deleteCustomRule(index));
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => this.deleteCustomRule(index));
+    }
     
     const editBtn = div.querySelector('.edit-rule-btn');
-    editBtn.addEventListener('click', () => this.editCustomRule(rule, index));
+    if (editBtn) {
+      editBtn.addEventListener('click', () => this.editCustomRule(rule, index));
+    }
+    
+    // Toggle button events are handled via event delegation in setupEventListeners
     
     return div;
   }
 
   editCustomRule(rule, index) {
+    // Set title for editing rule
+    const modalTitle = document.querySelector('#addRuleModal .modal-header h3');
+    if (modalTitle) {
+      modalTitle.textContent = 'Edit Custom Detection Rule';
+    }
+    
     // Store the index for updating instead of creating
     this.editingRuleIndex = index;
+    // Store the original rule for base detector overrides
+    this.editingRule = rule;
     
     // Pre-populate the add rule modal with existing rule data
     document.getElementById('ruleName').value = rule.name || '';
@@ -4450,19 +5170,64 @@ if ($result) {
     const iconSelector = document.getElementById('ruleIcon');
     const iconPreview = document.getElementById('iconPreview');
     
-    // Handle custom uploaded icons
-    if (rule.icon && rule.icon.startsWith('custom_icon_')) {
-      // Add option if it doesn't exist
-      let option = iconSelector.querySelector(`option[value="${rule.icon}"]`);
-      if (!option) {
-        option = document.createElement('option');
+    // First, remove any previously dynamically added options (except upload option)
+    const dynamicOptions = iconSelector.querySelectorAll('option[data-dynamic="true"]');
+    dynamicOptions.forEach(opt => opt.remove());
+    
+    // Handle custom uploaded icons and icons not in the dropdown
+    if (rule.icon && rule.icon !== 'custom.png') {
+      // Check if the icon exists in the dropdown
+      let existingOption = iconSelector.querySelector(`option[value="${rule.icon}"]`);
+      
+      if (!existingOption) {
+        // Icon is not in the dropdown, add it as a custom option
+        const option = document.createElement('option');
         option.value = rule.icon;
-        option.text = 'Custom Uploaded';
-        iconSelector.appendChild(option);
+        option.setAttribute('data-dynamic', 'true'); // Mark as dynamically added
+        
+        if (rule.icon.startsWith('custom_icon_')) {
+          option.text = 'Custom Uploaded';
+        } else {
+          // Extract name from icon filename for display
+          let iconName = rule.icon.replace(/\.(png|svg|jpg|jpeg)$/i, '');
+          
+          // Special cases for known icons
+          const iconNameMap = {
+            'funcaptcha': 'FunCaptcha (Arkose Labs)',
+            'geetest': 'GeeTest',
+            'aws': 'AWS WAF',
+            'f5': 'F5 Networks',
+            'sucuri': 'Sucuri',
+            'reblaze': 'Reblaze',
+            'aws-waf': 'AWS WAF'
+          };
+          
+          iconName = iconNameMap[iconName] || iconName.replace(/-/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase());
+          
+          option.text = iconName;
+        }
+        
+        // Add before the "Upload Custom Logo" option
+        const uploadOption = iconSelector.querySelector('option[value="upload"]');
+        if (uploadOption) {
+          iconSelector.insertBefore(option, uploadOption);
+        } else {
+          iconSelector.appendChild(option);
+        }
+        
+        existingOption = option;
       }
+      
+      // Set the value after ensuring the option exists
       iconSelector.value = rule.icon;
+      
+      // Double-check that it was selected
+      if (iconSelector.value !== rule.icon) {
+        console.warn(`Failed to select icon: ${rule.icon}`);
+      }
     } else {
-      iconSelector.value = rule.icon || 'custom.png';
+      iconSelector.value = 'custom.png';
     }
     
     // Update icon preview
@@ -4470,12 +5235,14 @@ if ($result) {
       this.getProviderIcon(rule.icon || 'custom.png').then(src => iconPreview.src = src);
     }
     
-    // Load color
+    // Load color - use detector-specific color, category color, or fallback
     const colorPicker = document.getElementById('ruleColor');
     const colorPreview = document.getElementById('colorPreview');
-    if (rule.color && colorPicker && colorPreview) {
-      colorPicker.value = rule.color;
-      colorPreview.style.background = rule.color;
+    if (colorPicker && colorPreview) {
+      // Ensure rule has a color - detector-specific first, then category fallback
+      const ruleColor = rule.color || this.getDetectorColor(rule.name) || this.getCategoryColor(rule.category) || '#6b7280';
+      colorPicker.value = ruleColor;
+      colorPreview.style.background = ruleColor;
     }
     
     // Clear rule inputs first
@@ -4483,12 +5250,28 @@ if ($result) {
     document.getElementById('headerRules').innerHTML = '';
     document.getElementById('urlRules').innerHTML = '';
     document.getElementById('scriptRules').innerHTML = '';
+    document.getElementById('domRules').innerHTML = '';
     
     // Helper function to populate a rule section
     const populateRuleSection = (sectionId, rules, type) => {
       const container = document.getElementById(sectionId);
-      if (rules && rules.length > 0) {
-        rules.forEach(ruleItem => {
+      
+      // Filter out empty rule entries
+      const validRules = rules ? rules.filter(rule => {
+        if (type === 'cookie' || type === 'header') {
+          return rule.name && rule.name.trim() !== '';
+        } else if (type === 'url') {
+          return rule.pattern && rule.pattern.trim() !== '';
+        } else if (type === 'script') {
+          return rule.content && rule.content.trim() !== '';
+        } else if (type === 'dom') {
+          return rule.selector && rule.selector.trim() !== '';
+        }
+        return false;
+      }) : [];
+      
+      if (validRules.length > 0) {
+        validRules.forEach(ruleItem => {
           const inputGroupHTML = this.createRuleInputGroup(type);
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = inputGroupHTML;
@@ -4521,10 +5304,8 @@ if ($result) {
           
           container.appendChild(inputGroup);
         });
-      } else {
-        // Add empty input group if no rules exist
-        container.innerHTML = this.createRuleInputGroup(type);
       }
+      // If no valid rules, container remains empty - no default rows
     };
     
     // Populate each rule section
@@ -4534,8 +5315,8 @@ if ($result) {
     populateRuleSection('scriptRules', rule.scripts, 'script');
     populateRuleSection('domRules', rule.dom, 'dom');
     
-    // Show the modal
-    this.showAddRuleModal();
+    // Show the modal (don't call showAddRuleModal as it resets the title)
+    document.getElementById('addRuleModal').style.display = 'flex';
   }
 
   async updateDefaultRulesIcons() {
@@ -4635,7 +5416,15 @@ if ($result) {
           const detectorUrl = chrome.runtime.getURL(`detectors/${detectorConfig.file}`);
           
           const detectorResponse = await fetch(detectorUrl);
+          if (!detectorResponse.ok) {
+            throw new Error(`HTTP ${detectorResponse.status}: ${detectorResponse.statusText} for ${detectorUrl}`);
+          }
+          
           const detector = await detectorResponse.json();
+          
+          if (!detector.icon) {
+            console.warn(`⚠️ Detector ${detectorId} has no icon property in JSON`);
+          }
           
           const rule = {
             id: detector.id || detectorId,
@@ -4654,7 +5443,7 @@ if ($result) {
           };
           defaultRules.push(rule);
         } catch (detectorError) {
-          console.error(`🛡️ Failed to load detector ${detectorId}:`, detectorError);
+          console.error(`❌ Failed to load detector ${detectorId} from ${detectorConfig.file}:`, detectorError.message);
         }
       }
       
@@ -4697,6 +5486,17 @@ if ($result) {
   }
 
   showAddRuleModal() {
+    // Set title for adding new rule
+    const modalTitle = document.querySelector('#addRuleModal .modal-header h3');
+    if (modalTitle) {
+      modalTitle.textContent = 'Add Custom Detection Rule';
+    }
+    
+    // Clean up any dynamically added options from previous edits
+    const iconSelector = document.getElementById('ruleIcon');
+    const dynamicOptions = iconSelector.querySelectorAll('option[data-dynamic="true"]');
+    dynamicOptions.forEach(opt => opt.remove());
+    
     document.getElementById('addRuleModal').style.display = 'flex';
     this.resetAddRuleForm();
   }
@@ -4705,6 +5505,7 @@ if ($result) {
     document.getElementById('addRuleModal').style.display = 'none';
     // Clear editing state
     delete this.editingRuleIndex;
+    delete this.editingRule;
   }
 
   resetAddRuleForm() {
@@ -4718,6 +5519,15 @@ if ($result) {
       const iconPreview = document.getElementById('iconPreview');
       if (iconPreview) {
         this.getProviderIcon('custom.png').then(src => iconPreview.src = src);
+      }
+      
+      // Reset color to default
+      const colorPicker = document.getElementById('ruleColor');
+      const colorPreview = document.getElementById('colorPreview');
+      if (colorPicker && colorPreview) {
+        const defaultColor = this.getCategoryColor('Anti-Bot');
+        colorPicker.value = defaultColor;
+        colorPreview.style.background = defaultColor;
       }
       
       // Reset rule input sections
@@ -4779,8 +5589,19 @@ if ($result) {
       return;
     }
     
-    const icon = document.getElementById('ruleIcon').value;
-    const color = document.getElementById('ruleColor').value;
+    // Get the selected icon value
+    let icon = document.getElementById('ruleIcon').value;
+    
+    // Don't use "upload" as an icon value
+    if (icon === 'upload') {
+      icon = 'custom.png';
+    }
+    let color = document.getElementById('ruleColor').value;
+    
+    // Use detector-specific color first, then category default if no custom color provided
+    if (!color || color === '#000000') {
+      color = this.getDetectorColor(name) || this.getCategoryColor(category);
+    }
     
     const now = new Date().toISOString();
     const rule = {
@@ -4806,20 +5627,37 @@ if ($result) {
     try {
       // Check if we're editing an existing rule
       if (this.editingRuleIndex !== undefined) {
-        // Preserve existing properties like isDefault, id, createdAt
-        const existingRule = this.customRules[this.editingRuleIndex];
-        this.customRules[this.editingRuleIndex] = {
-          ...existingRule,
-          ...rule,
-          lastUpdated: now
-        };
+        // Check if editing a base detector (index -1 means it's not in customRules)
+        if (this.editingRuleIndex === -1 && this.editingRule && this.editingRule.isDefault) {
+          // Create new custom rule that overrides the base detector
+          rule.createdAt = now;
+          rule.overridesDefault = this.editingRule.id || this.editingRule.name;
+          rule.originalRule = {
+            id: this.editingRule.id,
+            name: this.editingRule.name,
+            category: this.editingRule.category
+          };
+          this.customRules.push(rule);
+        } else if (this.editingRuleIndex >= 0) {
+          // Editing existing custom rule
+          const existingRule = this.customRules[this.editingRuleIndex];
+          this.customRules[this.editingRuleIndex] = {
+            ...existingRule,
+            ...rule,
+            lastUpdated: now
+          };
+        }
         delete this.editingRuleIndex; // Clear editing state
+        delete this.editingRule; // Clear editing rule reference
       } else {
         rule.createdAt = now;
         this.customRules.push(rule);
       }
       
       await chrome.storage.local.set({ customRules: this.customRules });
+      
+      // Notify background script to refresh detectors cache
+      await chrome.runtime.sendMessage({ action: 'reloadCustomRules' });
       
       // Notify content script to reload rules
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -4904,9 +5742,7 @@ if ($result) {
     // Use the showConfirmDialog method for consistent styling
     const confirmed = await this.showConfirmDialog(
       'Delete Rule',
-      'Are you sure you want to delete this custom rule? This action cannot be undone.',
-      'Delete',
-      'Cancel'
+      'Are you sure you want to delete this custom rule? This action cannot be undone.'
     );
     
     if (confirmed) {
@@ -4924,48 +5760,6 @@ if ($result) {
       this.loadCustomRules();
       this.showNotification('Rule deleted successfully', 'success');
     }
-  }
-  
-  showConfirmDialog(title, message, confirmText = 'Confirm', cancelText = 'Cancel') {
-    return new Promise((resolve) => {
-      // Create modal overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay confirm-dialog-overlay';
-      overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
-      
-      // Create dialog
-      const dialog = document.createElement('div');
-      dialog.className = 'confirm-dialog';
-      dialog.innerHTML = `
-        <div style="background: var(--bg-primary); border-radius: 12px; padding: 24px; min-width: 320px; max-width: 420px; border: 1px solid var(--border);">
-          <h3 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 18px; font-weight: 600;">${title}</h3>
-          <p style="margin: 0 0 20px 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5;">${message}</p>
-          <div style="display: flex; gap: 12px; justify-content: flex-end;">
-            <button class="cancel-btn" style="padding: 8px 16px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); cursor: pointer; font-size: 14px; transition: all 0.2s;">
-              ${cancelText}
-            </button>
-            <button class="confirm-btn" style="padding: 8px 16px; background: var(--error); border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
-              ${confirmText}
-            </button>
-          </div>
-        </div>
-      `;
-      
-      overlay.appendChild(dialog);
-      document.body.appendChild(overlay);
-      
-      // Handle clicks
-      const handleClick = (confirmed) => {
-        overlay.remove();
-        resolve(confirmed);
-      };
-      
-      dialog.querySelector('.cancel-btn').addEventListener('click', () => handleClick(false));
-      dialog.querySelector('.confirm-btn').addEventListener('click', () => handleClick(true));
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) handleClick(false);
-      });
-    });
   }
   
   showNotification(message, type = 'info') {

@@ -2,6 +2,7 @@
   "id": "perimeterx",
   "name": "PerimeterX",
   "category": "Anti-Bot",
+  "color": "#DC2626",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",

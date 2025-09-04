@@ -46,6 +46,7 @@
     {
       "resources": [
         "icons/providers/*", 
+        "detectors/**/*",
         "scripts/pbf.js", 
         "scripts/message.browser.js",
         "modules/*.js",

@@ -1,3 +1,4 @@
+// Define AntiBotDetector class (will be replaced if already exists)
 class AntiBotDetector {
   constructor() {
     this.detectors = {};
@@ -71,9 +72,54 @@ class AntiBotDetector {
     return categoryColors[category] || '#6b7280'; // Gray default
   }
 
+  getDetectorColor(detectorName) {
+    if (!detectorName) return null;
+    
+    const detectorColors = {
+      'akamai': '#FF6B35',          // Orange
+      'akamai bot manager': '#FF6B35',
+      'cloudflare': '#F48120',      
+      'datadome': '#22C55E',        // Green
+      'imperva': '#00BCD4',
+      'imperva incapsula': '#00BCD4',
+      'incapsula': '#00ACC1',
+      'perimeterx': '#DC2626',      // Red
+      'perimeter x': '#DC2626',
+      'reblaze': '#E91E63',
+      'sucuri': '#8BC34A',
+      'sucuri waf': '#8BC34A',
+      'aws': '#FF9900',
+      'aws shield': '#FF9900',
+      'f5': '#E53935',
+      'f5 networks': '#E53935',
+      'recaptcha': '#4285F4',
+      'google recaptcha': '#4285F4',
+      'hcaptcha': '#0074BF',
+      'funcaptcha': '#9C27B0',
+      'funcaptcha arkose labs': '#9C27B0',
+      'arkose': '#9C27B0',
+      'geetest': '#5E35B1',
+      'custom': '#9E9E9E'
+    };
+    
+    const normalizedName = detectorName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    
+    if (detectorColors[normalizedName]) {
+      return detectorColors[normalizedName];
+    }
+    
+    for (const [key, color] of Object.entries(detectorColors)) {
+      if (normalizedName.includes(key) || key.includes(normalizedName)) {
+        return color;
+      }
+    }
+    
+    return null;
+  }
+
   async loadDetectors() {
     try {
-      // Request detectors from background service instead of fetching files
+      // Request detectors from background service (includes base + edited + custom merged)
       
       const response = await chrome.runtime.sendMessage({ action: 'getDetectors' });
       
@@ -81,13 +127,14 @@ class AntiBotDetector {
         
         const detectorsData = response.detectors;
         
-        // Ensure all detectors have colors based on their category
+        // Ensure all detectors have colors (detector-specific first, then category)
         for (const [key, detector] of Object.entries(detectorsData.detectors)) {
-          if (!detector.color && detector.category) {
-            detector.color = this.getCategoryColor(detector.category);
+          if (!detector.color) {
+            detector.color = this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category) || '#6b7280';
           }
         }
         
+        // Use the merged detectors from background (no need to load custom rules separately)
         this.detectors = detectorsData.detectors;
         
       } else {
@@ -97,7 +144,7 @@ class AntiBotDetector {
           cloudflare: { 
             name: "Cloudflare", 
             category: "Anti-Bot", 
-            color: this.getCategoryColor("Anti-Bot"),
+            color: this.getDetectorColor("Cloudflare") || this.getCategoryColor("Anti-Bot"),
             icon: "cloudflare.png",
             detection: {
               cookies: [{ name: "__cf_bm", confidence: 95 }],
@@ -107,7 +154,7 @@ class AntiBotDetector {
           recaptcha: { 
             name: "reCAPTCHA", 
             category: "CAPTCHA", 
-            color: this.getCategoryColor("CAPTCHA"),
+            color: this.getDetectorColor("reCAPTCHA") || this.getCategoryColor("CAPTCHA"),
             icon: "recaptcha.png",
             detection: {
               scripts: [{ content: "grecaptcha", confidence: 95 }],
@@ -117,7 +164,7 @@ class AntiBotDetector {
           test_detector: {
             name: "Test Detector",
             category: "Test",
-            color: this.getCategoryColor("Test"),
+            color: this.getDetectorColor("Test Detector") || this.getCategoryColor("Test"),
             icon: "custom.png",
             detection: {
               urls: [{ pattern: "http", confidence: 100 }] // Should match any HTTP URL
@@ -126,8 +173,8 @@ class AntiBotDetector {
         };
       }
       
-      // Load custom rules
-      await this.loadCustomRules();
+      // Custom rules are already merged in the detectors from background
+      // No need to load them separately
       
       await this.analyze();
     } catch (error) {
@@ -137,7 +184,7 @@ class AntiBotDetector {
         cloudflare: {
           name: "Cloudflare",
           category: "Anti-Bot",
-          color: this.getCategoryColor("Anti-Bot"),
+          color: this.getDetectorColor("Cloudflare") || this.getCategoryColor("Anti-Bot"),
           icon: "cloudflare.png",
           detection: {
             cookies: [{ name: "__cf_bm", confidence: 95 }],
@@ -147,7 +194,7 @@ class AntiBotDetector {
         test_detector: {
           name: "Test Detector",
           category: "Test",
-          color: this.getCategoryColor("Test"),
+          color: this.getDetectorColor("Test Detector") || this.getCategoryColor("Test"),
           icon: "custom.png",
           detection: {
             urls: [{ pattern: "http", confidence: 100 }] // Should match any HTTP URL
@@ -182,7 +229,7 @@ class AntiBotDetector {
           category: rule.category,
           confidence: 100,
           website: 'Custom Rule',
-          icon: 'custom.svg',
+          icon: rule.icon || 'custom.png',
           color: rule.color || null,
           detection: this.convertCustomRuleToDetection(rule)
         };
@@ -263,6 +310,11 @@ class AntiBotDetector {
     
     
     for (const [key, detector] of Object.entries(this.detectors)) {
+      // Skip disabled detectors
+      if (detector.enabled === false) {
+        continue;
+      }
+      
       const detection = await this.detectSolution(detector);
       if (detection.detected) {
         // Check if we already detected a solution with this name
@@ -599,14 +651,106 @@ class AntiBotDetector {
       }
     });
 
-chrome.runtime.sendMessage({
+    chrome.runtime.sendMessage({
       action: 'detectionResults',
       url: window.location.href,
       results: this.detectedSolutions
     }).then(response => {
+      // Check if the domain is blacklisted
+      if (response && response.blacklisted) {
+        this.showBlacklistedNotification();
+      }
     }).catch(error => {
       console.error('🛡️ Failed to send results:', error);
     });
+  }
+
+  showBlacklistedNotification() {
+    // Create a notification element
+    const notification = document.createElement('div');
+    notification.id = 'shieldeye-blacklist-notification';
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #1f2937, #111827);
+      color: #f3f4f6;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 999999;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out;
+      max-width: 380px;
+    `;
+    
+    // Add the icon and message
+    notification.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" style="flex-shrink: 0; opacity: 0.9;">
+        <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.1 14.8,9.5V11C15.4,11.6 16,12.3 16,13.3V17C16,18.1 15.1,19 14,19H10C8.9,19 8,18.1 8,17V13.3C8,12.3 8.6,11.6 9.2,11V9.5C9.2,8.1 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.9 10.5,9.8V11H13.5V9.8C13.5,8.9 12.8,8.2 12,8.2Z" fill="#ef4444"/>
+      </svg>
+      <div>
+        <div style="font-weight: 600; margin-bottom: 4px; color: #ef4444;">Domain Excluded</div>
+        <div style="font-size: 12px; opacity: 0.8;">ShieldEye detection is disabled for this website</div>
+      </div>
+      <button style="
+        background: none;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 4px;
+        margin-left: auto;
+        flex-shrink: 0;
+      " onclick="this.parentElement.remove()">
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+        </svg>
+      </button>
+    `;
+    
+    // Add animation keyframes
+    if (!document.getElementById('shieldeye-blacklist-styles')) {
+      const style = document.createElement('style');
+      style.id = 'shieldeye-blacklist-styles';
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Remove any existing notification
+    const existing = document.getElementById('shieldeye-blacklist-notification');
+    if (existing) {
+      existing.remove();
+    }
+    
+    // Add the notification to the page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(20px)';
+        setTimeout(() => notification.remove(), 300);
+      }
+    }, 8000);
   }
 
   extractReCaptchaParameters() {
@@ -1008,35 +1152,39 @@ chrome.runtime.sendMessage({
 }
 
 // Global variables for extension functionality
-let analyzeTimeout;
-let lastResultsHash = '';
-let isAnalyzing = false;
-let detector = null;
-
-// Create the single detector instance
-detector = new AntiBotDetector();
-
-if (typeof chrome !== 'undefined' && chrome.runtime) {
+// Check if already initialized to prevent duplicate instances
+// Initialize only once
+if (typeof window.shieldEyeInitialized === 'undefined') {
+  window.shieldEyeInitialized = true;
   
-  // Override the sendResults method to add simple deduplication
-  const originalSendResults = detector.sendResults.bind(detector);
-  detector.sendResults = function() {
-    const resultsHash = JSON.stringify(this.detectedSolutions.map(s => ({ 
-      key: s.key, 
-      name: s.name, 
-      confidence: s.confidence,
-      matchCount: s.matches?.length || 0
-    })));
-    
-    // Only prevent duplicates if exact same results were sent very recently (within 1 second)
-    if (resultsHash === lastResultsHash && Date.now() - detector.lastSentTime < 1000) {
-      return;
-    }
-    
-    lastResultsHash = resultsHash;
-    detector.lastSentTime = Date.now();
-    originalSendResults();
-  };
+  // Global variables
+  let analyzeTimeout;
+  let lastResultsHash = '';
+  let isAnalyzing = false;
+  
+  // Create the single detector instance
+  const detector = new AntiBotDetector();
+
+  if (typeof chrome !== 'undefined' && chrome.runtime && detector) {
+    // Override the sendResults method to add simple deduplication
+    const originalSendResults = detector.sendResults.bind(detector);
+    detector.sendResults = function() {
+      const resultsHash = JSON.stringify(this.detectedSolutions.map(s => ({ 
+        key: s.key, 
+        name: s.name, 
+        confidence: s.confidence,
+        matchCount: s.matches?.length || 0
+      })));
+      
+      // Only prevent duplicates if exact same results were sent very recently (within 1 second)
+      if (resultsHash === lastResultsHash && Date.now() - detector.lastSentTime < 1000) {
+        return;
+      }
+      
+      lastResultsHash = resultsHash;
+      detector.lastSentTime = Date.now();
+      originalSendResults();
+    };
   
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'ping') {
@@ -1071,10 +1219,8 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
         return true;
       }
       
-      Promise.all([
-        detector.loadCustomRules(),
-        detector.loadHeaders()
-      ]).then(async () => {
+      // Reload ALL detectors from background to get merged data (base + edited + custom)
+      detector.loadDetectors().then(async () => {
         // Double-check context before analyzing
         if (chrome.runtime?.id) {
           await detector.analyze();
@@ -1084,10 +1230,10 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
         }
       }).catch(error => {
         if (error.message?.includes('Extension context invalidated')) {
-          console.warn('🛡️ Extension reloaded during custom rules reload');
+          console.warn('🛡️ Extension reloaded during detector reload');
           sendResponse({ success: false, error: 'Extension reloaded' });
         } else {
-          console.error('Custom rules reload error:', error);
+          console.error('Detector reload error:', error);
           sendResponse({ success: false, error: error.message });
         }
       });
@@ -1125,7 +1271,6 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
     // Check if extension context is still valid
     if (!chrome.runtime?.id) {
       observer.disconnect();
-      console.warn('🛡️ Extension context invalidated, disconnecting observer');
       return;
     }
     
@@ -1152,4 +1297,20 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
     childList: true,
     subtree: true
   });
-}
+  
+  } // End of chrome runtime check
+  
+  // Initial load and analysis
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+      await detector.loadDetectors();
+      await detector.analyze();
+    });
+  } else {
+    // DOM is already loaded
+    detector.loadDetectors().then(() => {
+      detector.analyze();
+    });
+  }
+
+} // End of if (typeof window.shieldEyeInitialized === 'undefined')

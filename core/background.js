@@ -7,9 +7,6 @@ class BackgroundService {
     this.captureMode = new Map(); // Track capture mode per tab
     this.capturedParams = new Map(); // Store captured params per tab
     this.blacklist = []; // Store blacklisted domains
-    this.telemetryQueue = []; // Queue for telemetry data
-    this.telemetryEnabled = false; // Telemetry opt-in status
-    this.telemetryEndpoint = ''; // Configurable telemetry endpoint
     this.contentScriptReady = new Map(); // Track which tabs have content script ready
     this.detectorsCache = null; // Cache for detector data
     this.detectorsCacheTime = 0; // Timestamp of last cache update
@@ -20,7 +17,6 @@ class BackgroundService {
     
     this.init();
     this.loadBlacklist();
-    this.initTelemetry();
     this.loadDetectorsOnce(); // Load detectors once on startup
   }
   
@@ -206,7 +202,7 @@ class BackgroundService {
             name: param.provider,
             key: paramKey,
             confidence: 100,
-            icon: paramKey + '.svg',
+            icon: paramKey + '.png',
             advancedParameters: {
               ...param,
               network_captured: true
@@ -262,9 +258,6 @@ class BackgroundService {
         }
         this.storeResults(sender.tab.id, request.results, request.url);
         this.updateBadge(sender.tab.id, request.results);
-        // Collect telemetry
-        const url = new URL(request.url);
-        this.collectTelemetry(url.hostname, request.results);
         sendResponse({ success: true });
         return false;
         
@@ -305,7 +298,7 @@ class BackgroundService {
           name: param.provider,
           key: param.provider.toLowerCase(),
           confidence: 100,
-          icon: param.provider.toLowerCase() + '.svg',
+          icon: param.provider.toLowerCase() + '.png',
           advancedParameters: {
             ...param,
             network_captured: true
@@ -371,24 +364,6 @@ class BackgroundService {
         sendResponse({ success: true });
         return false;
         
-      case 'updateTelemetrySettings':
-        this.telemetryEnabled = request.enabled;
-        this.telemetryEndpoint = request.endpoint || this.telemetryEndpoint;
-        chrome.storage.sync.set({ 
-          telemetryEnabled: this.telemetryEnabled,
-          telemetryEndpoint: this.telemetryEndpoint
-        });
-        if (this.telemetryEnabled) {
-          chrome.alarms.create('sendTelemetry', {
-            delayInMinutes: 1,
-            periodInMinutes: 30
-          });
-        } else {
-          chrome.alarms.clear('sendTelemetry');
-        }
-        sendResponse({ success: true });
-        return false;
-        
       case 'clearCache':
         this.clearCache().then(() => {
           sendResponse({ success: true });
@@ -420,7 +395,10 @@ class BackgroundService {
         // Clear the detector cache so it will reload from Chrome storage
         this.detectorsCache = null;
         this.detectorsCacheTime = 0;
-        this.loadDetectorsOnce().then(() => {
+        // Also clear from storage to force full reload
+        chrome.storage.local.remove(['detectorsCache', 'detectorsCacheTime']).then(() => {
+          return this.loadDetectorsOnce();
+        }).then(() => {
           sendResponse({ success: true });
         }).catch(error => {
           console.error('🛡️ Background: Failed to reload custom rules:', error);
@@ -569,8 +547,6 @@ class BackgroundService {
   async handleAlarm(alarm) {
     if (alarm.name === 'updateDetectors') {
       await this.updateDetectors();
-    } else if (alarm.name === 'sendTelemetry') {
-      await this.sendTelemetry();
     }
   }
 
@@ -932,85 +908,6 @@ class BackgroundService {
     }
   }
 
-  // Telemetry System
-  async initTelemetry() {
-    const settings = await chrome.storage.sync.get(['telemetryEnabled', 'telemetryEndpoint']);
-    this.telemetryEnabled = settings.telemetryEnabled || false;
-    this.telemetryEndpoint = settings.telemetryEndpoint || 'https://api.shieldeye.io/telemetry';
-    
-    // Set up periodic telemetry sending (every 30 minutes)
-    if (this.telemetryEnabled) {
-      chrome.alarms.create('sendTelemetry', {
-        delayInMinutes: 1,
-        periodInMinutes: 30
-      });
-    }
-  }
-
-  async collectTelemetry(domain, detections) {
-    if (!this.telemetryEnabled) return;
-    
-    try {
-      // Hash domain for privacy
-      const hashedDomain = await this.hashDomain(domain);
-      
-      const telemetryData = {
-        timestamp: Date.now(),
-        hashedDomain: hashedDomain,
-        detections: detections.map(d => ({
-          name: d.name,
-          category: d.category,
-          confidence: d.confidence
-        })),
-        version: chrome.runtime.getManifest().version,
-        platform: navigator.platform
-      };
-      
-      this.telemetryQueue.push(telemetryData);
-      
-      // Send immediately if queue is large
-      if (this.telemetryQueue.length >= 10) {
-        await this.sendTelemetry();
-      }
-    } catch (error) {
-      console.error('Error collecting telemetry:', error);
-    }
-  }
-
-  async hashDomain(domain) {
-    // Simple hash function for privacy
-    const encoder = new TextEncoder();
-    const data = encoder.encode(domain);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
-  }
-
-  async sendTelemetry() {
-    if (!this.telemetryEnabled || this.telemetryQueue.length === 0) return;
-    
-    try {
-      const dataToSend = [...this.telemetryQueue];
-      this.telemetryQueue = [];
-      
-      await fetch(this.telemetryEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Extension-Version': chrome.runtime.getManifest().version
-        },
-        body: JSON.stringify({
-          batch: dataToSend,
-          batchSize: dataToSend.length
-        })
-      });
-      
-    } catch (error) {
-      // Restore queue on error
-      this.telemetryQueue.unshift(...dataToSend);
-      console.error('Failed to send telemetry:', error);
-    }
-  }
 
   // Cache Management
   async clearCache() {
@@ -1027,7 +924,6 @@ class BackgroundService {
       advancedResults: this.advancedResults.size,
       headersCache: this.headersCache.size,
       captchaParameters: this.captchaParameters.size,
-      telemetryQueue: this.telemetryQueue.length
     };
   }
 
@@ -1055,43 +951,9 @@ class BackgroundService {
   async loadDetectorsOnce() {
     try {
       
-      // First check if user has custom/modified rules in Chrome storage
-      const customRulesResult = await chrome.storage.local.get(['customRules']);
-      if (customRulesResult.customRules && customRulesResult.customRules.length > 0) {
-        
-        // Convert customRules format to detectors format for compatibility
-        const detectorsData = { detectors: {} };
-        customRulesResult.customRules.forEach(rule => {
-          if (rule.enabled !== false) { // Only include enabled rules
-            detectorsData.detectors[rule.id || rule.name.toLowerCase().replace(/\s+/g, '_')] = {
-              name: rule.name,
-              category: rule.category,
-              icon: rule.icon,
-              enabled: rule.enabled !== false,
-              detection: {
-                cookies: rule.cookies || [],
-                headers: rule.headers || [],
-                urls: rule.urls || [],
-                scripts: rule.scripts || [],
-                dom: rule.dom || [],
-                patterns: rule.patterns || {}
-              },
-              // Include any additional properties
-              behaviors: rule.behaviors,
-              gameTypes: rule.gameTypes,
-              challengeTypes: rule.challengeTypes,
-              mitigation: rule.mitigation,
-              bypass: rule.bypass
-            };
-          }
-        });
-        
-        this.detectorsCache = detectorsData;
-        this.detectorsCacheTime = Date.now();
-        return;
-      }
+      // Load base detectors first, then merge custom rules
       
-      // Fallback: Check cached detectors from JSON files
+      // Check cached detectors from Chrome storage
       const cached = await chrome.storage.local.get(['detectorsCache', 'detectorsCacheTime']);
       const now = Date.now();
       const isCacheValid = cached.detectorsCache && 
@@ -1123,8 +985,18 @@ class BackgroundService {
           // Load each detector file in parallel for better performance
           const detectorPromises = Object.entries(indexData.detectors).map(async ([detectorId, config]) => {
             try {
-              const detectorResponse = await fetch(chrome.runtime.getURL(`detectors/${config.file}`));
+              const detectorUrl = chrome.runtime.getURL(`detectors/${config.file}`);
+              const detectorResponse = await fetch(detectorUrl);
+              
+              if (!detectorResponse.ok) {
+                throw new Error(`HTTP ${detectorResponse.status}: ${detectorResponse.statusText} for ${detectorUrl}`);
+              }
+              
               const detector = await detectorResponse.json();
+              
+              if (!detector.icon) {
+                console.warn(`⚠️ Detector ${detectorId} has no icon property in JSON`);
+              }
               
               return {
                 id: detectorId,
@@ -1134,12 +1006,14 @@ class BackgroundService {
                   confidence: detector.confidence || 100,
                   website: detector.website,
                   icon: detector.icon || 'custom.png',
-                  color: detector.color || this.getCategoryColor(detector.category),
+                  color: detector.color || this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category),
+                  lastUpdated: detector.lastUpdated,
+                  version: detector.version,
                   detection: detector.detection || {}
                 }
               };
             } catch (e) {
-              console.warn(`Failed to load detector ${detectorId}:`, e);
+              console.error(`❌ Failed to load detector ${detectorId} from ${config.file}:`, e.message);
               return null;
             }
           });
@@ -1160,24 +1034,107 @@ class BackgroundService {
             cloudflare: { 
               name: "Cloudflare", 
               category: "Anti-Bot", 
-              color: this.getCategoryColor("Anti-Bot"), 
+              color: this.getDetectorColor("Cloudflare") || this.getCategoryColor("Anti-Bot"),
+              icon: "cloudflare.png",
               detection: {} 
             },
             recaptcha: { 
               name: "reCAPTCHA", 
               category: "CAPTCHA", 
-              color: this.getCategoryColor("CAPTCHA"), 
+              color: this.getDetectorColor("reCAPTCHA") || this.getCategoryColor("CAPTCHA"),
+              icon: "recaptcha.png",
               detection: {} 
             }
           };
         }
       }
       
-      // Ensure all detectors have colors
+      // Ensure all detectors have colors (detector-specific first, then category)
       for (const [key, detector] of Object.entries(detectorsData.detectors)) {
-        if (!detector.color && detector.category) {
-          detector.color = this.getCategoryColor(detector.category);
+        if (!detector.color) {
+          detector.color = this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category) || '#6b7280';
         }
+      }
+      
+      // Process custom rules and overrides
+      const customRulesResult = await chrome.storage.local.get(['customRules']);
+      if (customRulesResult.customRules && customRulesResult.customRules.length > 0) {
+        customRulesResult.customRules.forEach(rule => {
+          // Check if this rule overrides a base detector
+          if (rule.overridesDefault) {
+            const baseId = rule.overridesDefault;
+            
+            // If the override disables the detector, remove it entirely
+            if (rule.enabled === false && detectorsData.detectors[baseId]) {
+              delete detectorsData.detectors[baseId];
+              return;
+            }
+            
+            // Replace the base detector with the edited version
+            if (detectorsData.detectors[baseId]) {
+              // Only include detection methods that have content (not empty arrays)
+              const detection = {};
+              
+              // Only add detection methods if they exist and have content
+              if (rule.cookies && rule.cookies.length > 0) {
+                detection.cookies = rule.cookies;
+              }
+              if (rule.headers && rule.headers.length > 0) {
+                detection.headers = rule.headers;
+              }
+              if (rule.urls && rule.urls.length > 0) {
+                detection.urls = rule.urls;
+              }
+              if (rule.scripts && rule.scripts.length > 0) {
+                detection.scripts = rule.scripts;
+              }
+              if (rule.dom && rule.dom.length > 0) {
+                detection.dom = rule.dom;
+              }
+              if (rule.patterns && Object.keys(rule.patterns).length > 0) {
+                detection.patterns = rule.patterns;
+              }
+              
+              // Completely replace with edited detection parameters
+              detectorsData.detectors[baseId] = {
+                name: rule.name,
+                category: rule.category,
+                icon: rule.icon || detectorsData.detectors[baseId].icon || 'custom.png',
+                color: rule.color || detectorsData.detectors[baseId].color,
+                enabled: rule.enabled !== false,
+                detection: detection, // Use filtered detection object
+                lastUpdated: rule.lastUpdated,
+                version: rule.version || detectorsData.detectors[baseId].version
+              };
+            }
+          } else if (!rule.isDefault) {
+            // Skip disabled custom rules
+            if (rule.enabled === false) return;
+            
+            // Add as new custom rule
+            const ruleId = rule.id || rule.name.toLowerCase().replace(/\s+/g, '_');
+            detectorsData.detectors[ruleId] = {
+              name: rule.name,
+              category: rule.category,
+              icon: rule.icon || 'custom.png',
+              color: rule.color,
+              enabled: rule.enabled !== false,
+              detection: {
+                cookies: rule.cookies || [],
+                headers: rule.headers || [],
+                urls: rule.urls || [],
+                scripts: rule.scripts || [],
+                dom: rule.dom || [],
+                patterns: rule.patterns || {}
+              },
+              behaviors: rule.behaviors,
+              gameTypes: rule.gameTypes,
+              challengeTypes: rule.challengeTypes,
+              mitigation: rule.mitigation,
+              bypass: rule.bypass
+            };
+          }
+        });
       }
       
       // Cache the detectors
@@ -1208,6 +1165,58 @@ class BackgroundService {
       'Marketing': '#ec4899'          // Pink
     };
     return categoryColors[category] || '#6b7280'; // Gray default
+  }
+
+  getDetectorColor(detectorName) {
+    // Unique color for each specific detector/provider
+    const detectorColors = {
+      // Anti-Bot Solutions
+      'akamai': '#FF6B35',
+      'cloudflare': '#F48120',
+      'datadome': '#22C55E',        // Green
+      'imperva': '#00BCD4',
+      'incapsula': '#00ACC1',
+      'perimeterx': '#DC2626',      // Red
+      'reblaze': '#E91E63',
+      'sucuri': '#8BC34A',
+      'aws': '#FF9900',
+      'f5': '#E53935',
+      'kasada': '#3F51B5',
+      'radware': '#009688',
+      
+      // CAPTCHA Solutions
+      'recaptcha': '#4285F4',
+      'hcaptcha': '#0074BF',
+      'funcaptcha': '#9C27B0',
+      'geetest': '#5E35B1',
+      'friendly captcha': '#22C55E',
+      'mtcaptcha': '#FF5722',
+      
+      // WAF Solutions  
+      'akamai waf': '#D32F2F',
+      'cloudflare waf': '#FF6F00',
+      'aws waf': '#FF8F00',
+      'azure waf': '#0078D4',
+      'barracuda': '#00695C',
+      'fortinet': '#EE0000',
+      
+      // Default
+      'custom': '#9E9E9E'
+    };
+    
+    const normalizedName = detectorName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    
+    if (detectorColors[normalizedName]) {
+      return detectorColors[normalizedName];
+    }
+    
+    for (const [key, color] of Object.entries(detectorColors)) {
+      if (normalizedName.includes(key) || key.includes(normalizedName)) {
+        return color;
+      }
+    }
+    
+    return null;
   }
   
   async refreshDetectorsCache() {

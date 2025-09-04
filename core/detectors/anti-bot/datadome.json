@@ -2,6 +2,7 @@
   "id": "datadome",
   "name": "DataDome",
   "category": "Anti-Bot",
+  "color": "#22C55E",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",

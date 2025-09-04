@@ -61,6 +61,12 @@
           </svg>
           Advanced
         </button>
+        <button class="tab-btn" data-tab="sponsor">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M12,17.27L18.18,21l-1.64-7.03L22,9.24l-7.19-.61L12,2L9.19,8.63L2,9.24l5.46,4.73L5.82,21z" fill="currentColor"/>
+          </svg>
+          Sponsor
+        </button>
       </nav>
     </header>
 
@@ -188,10 +194,9 @@
       <!-- History Tab -->
       <div id="historyTab" class="tab-content" style="display: none;">
         <div class="history-header">
-          <h3>Detection History</h3>
           <div class="header-actions">
             <div class="search-container">
-              <input type="text" id="historySearch" class="search-input" placeholder="Search history...">
+              <input type="text" id="historySearch" class="search-input" placeholder="Search by URL, detector name or category...">
               <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24">
                 <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z" fill="currentColor"/>
               </svg>
@@ -239,7 +244,6 @@
       <!-- Custom Rules Tab -->
       <div id="rulesTab" class="tab-content" style="display: none;">
         <div class="rules-header">
-          <h3>Custom Rules</h3>
           <div class="header-actions">
             <div class="search-container">
               <input type="text" id="rulesSearch" class="search-input" placeholder="Search rules...">
@@ -259,6 +263,12 @@
                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,11.5H16V10L19.5,12.5L16,15V13.5H8V11.5Z" fill="currentColor"/>
               </svg>
               Export
+            </button>
+            <button id="clearRulesBtn" class="clear-btn-small" title="Clear All Rules">
+              <svg width="12" height="12" viewBox="0 0 24 24">
+                <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+              </svg>
+              Clear
             </button>
             <button id="addRuleBtn" class="add-btn" title="Add Rule">
               <svg width="10" height="10" viewBox="0 0 24 24">
@@ -438,7 +448,7 @@
           <div class="advanced-coming-soon-container">
             <div class="advanced-coming-soon-content">
               <div class="coming-soon-icon-advanced">
-                <svg width="80" height="80" viewBox="0 0 24 24" style="opacity: 0.3; margin-bottom: 20px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" style="opacity: 0.3;">
                   <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,12.1 16,12.8 16,13.8V17.8C16,18.9 15.1,19.8 14,19.8H10C8.9,19.8 8,18.9 8,17.8V13.8C8,12.8 8.6,12.1 9.2,11.5V10C9.2,8.6 10.6,7 12,7Z" fill="currentColor"/>
                 </svg>
               </div>
@@ -482,6 +492,16 @@
         </div>
       </div>
 
+      <!-- Sponsor Tab -->
+      <div id="sponsorTab" class="tab-content">
+        <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+          <svg width="60" height="60" viewBox="0 0 24 24" style="opacity: 0.3; margin-bottom: 20px;">
+            <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z" fill="currentColor"/>
+          </svg>
+          <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; color: var(--text-primary);">Coming Soon</h2>
+          <p style="color: var(--text-secondary); font-size: 14px;">Sponsorship opportunities will be available soon</p>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -645,6 +665,7 @@
               </button>
             </div>
             <div id="blacklistItems" class="clean-domain-list"></div>
+            <div id="blacklistPagination" class="blacklist-pagination"></div>
           </div>
         </div>
         
@@ -696,12 +717,18 @@
             <select id="ruleIcon" class="select-field icon-select">
               <option value="custom.png">Custom (Default)</option>
               <option value="akamai.png">Akamai</option>
+              <option value="aws.png">AWS WAF</option>
               <option value="cloudflare.png">Cloudflare</option>
               <option value="datadome.png">DataDome</option>
+              <option value="f5.png">F5 Networks</option>
+              <option value="funcaptcha.png">FunCaptcha (Arkose)</option>
+              <option value="geetest.png">GeeTest</option>
               <option value="hcaptcha.png">hCaptcha</option>
               <option value="imperva.png">Imperva/Incapsula</option>
               <option value="perimeterx.png">PerimeterX</option>
+              <option value="reblaze.png">Reblaze</option>
               <option value="recaptcha.png">reCAPTCHA</option>
+              <option value="sucuri.png">Sucuri</option>
               <option value="upload">📤 Upload Custom Logo</option>
             </select>
             <img id="iconPreview" class="icon-preview" alt="Icon preview">
