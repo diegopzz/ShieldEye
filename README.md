@@ -42,7 +42,7 @@ ShieldEye is an open-source browser extension that detects and analyzes anti-bot
 ## ✨ Key Features
 
 ### 🔍 Detection Capabilities
-- **35+ Detection Systems**: Identifies major security solutions including:
+- **16+ Detection Systems**: Identifies major security solutions including:
   - **Anti-Bot Services**: Akamai, Cloudflare, DataDome, PerimeterX, Incapsula
   - **CAPTCHA Services**: reCAPTCHA (v2/v3/Enterprise), hCaptcha, FunCaptcha, GeeTest
   - **Fingerprinting Detection**: Canvas, WebGL, and Audio fingerprinting
