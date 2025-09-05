@@ -715,7 +715,7 @@ body {
 .match-category.match-type-header { background: #3B82F6; color: white; }
 .match-category.match-type-url { background: #10B981; color: white; }
 .match-category.match-type-script { background: #F59E0B; color: white; }
-.match-category.match-type-global { background: #8B5CF6; color: white; }
+/* .match-category.match-type-global removed */
 
 .match-value {
   display: inline-block;
@@ -796,8 +796,7 @@ body {
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
-.match-tag.match-type-script,
-.match-tag.match-type-global {
+.match-tag.match-type-script {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -1162,8 +1161,7 @@ body {
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
-.match-type-script,
-.match-type-global {
+.match-type-script {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.2);
@@ -4597,19 +4595,33 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
+  min-width: 900px; /* Ensure table has minimum width for all columns */
 }
 
 .capture-table th {
   background: var(--bg-tertiary);
   padding: 8px 6px;
   text-align: left;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-primary); /* Make headers more visible */
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
-  font-size: 10px;
+  font-size: 11px; /* Slightly larger */
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  min-width: 50px; /* Minimum width for each column */
+}
+
+.capture-table th:first-child {
+  min-width: 120px; /* Website column wider */
+}
+
+.capture-table th:nth-child(2) {
+  min-width: 80px; /* Site key column */
+}
+
+.capture-table th:last-child {
+  min-width: 70px; /* Actions column */
 }
 
 .capture-table td {

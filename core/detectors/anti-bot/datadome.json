@@ -9,7 +9,6 @@
   "website": "https://datadome.co/",
   "icon": "datadome.png",
   "description": "Real-time bot protection with machine learning-based detection",
-  "tags": ["machine-learning", "real-time", "api-protection"],
   "detection": {
     "cookies": [
       {
@@ -23,8 +22,7 @@
         "description": "Session tracking"
       }
     ],
-    "headers": [
-    ],
+    "headers": [],
     "urls": [
       {
         "pattern": "datadome.co",

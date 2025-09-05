@@ -2,13 +2,13 @@
   "id": "funcaptcha",
   "name": "FunCaptcha (Arkose Labs)",
   "category": "CAPTCHA",
+  "color": "#9C27B0",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://www.arkoselabs.com/",
   "icon": "funcaptcha.png",
   "description": "Interactive game-based CAPTCHA by Arkose Labs",
-  "tags": ["interactive", "game-based", "machine-learning"],
   "detection": {
     "cookies": [
       {

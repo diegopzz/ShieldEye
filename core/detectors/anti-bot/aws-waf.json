@@ -2,13 +2,13 @@
   "id": "aws-waf",
   "name": "AWS WAF",
   "category": "Anti-Bot",
+  "color": "#FF9900",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://aws.amazon.com/waf/",
   "icon": "aws.png",
   "description": "Amazon Web Services Web Application Firewall with bot control",
-  "tags": ["waf", "bot-protection", "aws", "cloud-security", "ddos-protection"],
   "detection": {
     "cookies": [
       {
@@ -22,9 +22,7 @@
         "description": "AWS WAF cookies"
       }
     ],
-    "headers": [
-    
-    ],
+    "headers": [],
     "urls": [
       {
         "pattern": "/challenge.js",
@@ -48,23 +46,6 @@
         "confidence": 85,
         "description": "AWS WAF reference"
       }
-    ]
-  },
-  "mitigation": {
-    "difficulty": "High",
-    "techniques": [
-      "Rate limiting",
-      "Geo-blocking",
-      "IP reputation lists",
-      "Regex pattern matching",
-      "Bot Control rule group",
-      "JavaScript challenge"
-    ],
-    "bypass_methods": [
-      "Residential proxies",
-      "Solving JavaScript challenges",
-      "Request throttling",
-      "User-Agent rotation"
     ]
   }
 }

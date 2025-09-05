@@ -44,113 +44,64 @@ class PopupManager {
   }
 
   getCategoryColor(category) {
+    // Using shared utility colors for consistency
     const categoryColors = {
       'CAPTCHA': '#dc2626',           // Red
       'Anti-Bot': '#ea580c',          // Orange  
       'WAF': '#2563eb',               // Blue
       'CDN': '#059669',               // Green
-      'Fingerprinting': '#7c3aed',    // Purple
-      'Security': '#0891b2',          // Cyan
-      'Analytics': '#ca8a04',         // Yellow
+      'Fingerprinting': '#f59e0b',    // Amber (updated to match utility)
+      'Security': '#10b981',          // Emerald (updated to match utility)
+      'Analytics': '#8b5cf6',         // Violet (updated to match utility)
       'Marketing': '#ec4899',         // Pink
       'Bot Management': '#f43f5e',    // Rose
+      'Bot Detection': '#ea580c',     // Orange (added from utility)
       'DDoS Protection': '#06b6d4',   // Sky
+      'DDoS': '#b91c1c',              // Dark Red (added from utility)
       'Rate Limiting': '#84cc16',     // Lime
-      'Fraud Detection': '#d946ef'    // Fuchsia
+      'Fraud Detection': '#d946ef',   // Fuchsia
+      'Protection': '#7c3aed'         // Purple (added from utility)
     };
     return categoryColors[category] || '#6b7280'; // Gray default
   }
 
-  getDetectorColor(detectorName) {
-    if (!detectorName) return null;
+  async getDetectorColor(detectorName) {
+    if (!detectorName) return '#6b7280'; // Default gray
     
-    // Unique color for each specific detector/provider
-    const detectorColors = {
-      // Anti-Bot Solutions (with variations)
-      'akamai': '#FF6B35',          // Orange
-      'akamai bot manager': '#FF6B35',
-      'cloudflare': '#F48120',      // CloudFlare Orange
-      'datadome': '#22C55E',        // Green
-      'imperva': '#00BCD4',         // Cyan
-      'imperva incapsula': '#00BCD4',
-      'incapsula': '#00ACC1',       // Cyan variant
-      'perimeterx': '#DC2626',      // Red
-      'perimeter x': '#DC2626',     // Red
-      'reblaze': '#E91E63',         // Pink
-      'sucuri': '#8BC34A',          // Light Green
-      'sucuri waf': '#8BC34A',
-      'aws': '#FF9900',             // AWS Orange
-      'aws shield': '#FF9900',
-      'f5': '#E53935',              // F5 Red
-      'f5 networks': '#E53935',
-      'kasada': '#3F51B5',          // Indigo
-      'radware': '#009688',         // Teal
+    // Colors are now loaded from detector JSON files
+    // First, try to get the color from the stored detector data
+    try {
+      // Get all detectors from storage
+      const result = await chrome.storage.local.get(['detectors']);
+      const detectors = result.detectors || {};
       
-      // CAPTCHA Solutions (with variations)
-      'recaptcha': '#4285F4',       // Google Blue
-      'google recaptcha': '#4285F4',
-      'hcaptcha': '#0074BF',        // hCaptcha Blue
-      'funcaptcha': '#9C27B0',      // Purple (Arkose)
-      'funcaptcha arkose labs': '#9C27B0',
-      'arkose': '#9C27B0',
-      'geetest': '#5E35B1',         // Deep Purple
-      'friendly captcha': '#22C55E', // Green
-      'mtcaptcha': '#FF5722',       // Deep Orange
-      'puzzle captcha': '#795548',  // Brown
-      'slider captcha': '#607D8B',  // Blue Gray
+      // Normalize the detector name for matching
+      const normalizedName = detectorName.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .trim();
       
-      // WAF Solutions  
-      'akamai waf': '#D32F2F',      // Dark Red
-      'cloudflare waf': '#FF6F00',  // Dark Orange
-      'aws waf': '#FF8F00',         // Amber
-      'azure waf': '#0078D4',       // Azure Blue
-      'barracuda': '#00695C',       // Dark Teal
-      'fortinet': '#EE0000',        // Fortinet Red
-      'modsecurity': '#512DA8',     // Deep Purple
-      
-      // CDN Providers
-      'cloudflare cdn': '#F57C00',  // Orange
-      'fastly': '#FF6D6D',          // Light Red
-      'akamai cdn': '#0097A7',      // Dark Cyan
-      'aws cloudfront': '#FF9100',  // AWS Orange variant
-      'azure cdn': '#0078D4',       // Azure Blue
-      'stackpath': '#1976D2',       // Blue
-      
-      // Bot Management
-      'shape security': '#651FFF',   // Deep Purple
-      'distil networks': '#00E676',  // Light Green
-      'white ops': '#FF1744',        // Red Accent
-      'arkose labs': '#7B1FA2',      // Purple
-      
-      // Fingerprinting
-      'fingerprintjs': '#FF4081',    // Pink Accent
-      'trustdecision': '#536DFE',    // Indigo Accent
-      'seon': '#18FFFF',             // Cyan Accent
-      
-      // Default colors for unknown detectors
-      'custom': '#9E9E9E',           // Gray
-      'unknown': '#757575'           // Dark Gray
-    };
-    
-    // Normalize the detector name (lowercase, remove special chars)
-    const normalizedName = detectorName.toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .trim();
-    
-    // Check for exact match first
-    if (detectorColors[normalizedName]) {
-      return detectorColors[normalizedName];
-    }
-    
-    // Check for partial matches (e.g., "Imperva Incapsula" matches "imperva")
-    for (const [key, color] of Object.entries(detectorColors)) {
-      if (normalizedName.includes(key) || key.includes(normalizedName)) {
-        return color;
+      // Look for the detector by name or key
+      for (const [key, detector] of Object.entries(detectors)) {
+        const detectorNameLower = (detector.name || '').toLowerCase();
+        const keyLower = key.toLowerCase();
+        
+        // Check if we have a match
+        if (detectorNameLower === normalizedName || 
+            keyLower === normalizedName ||
+            detectorNameLower.includes(normalizedName) ||
+            normalizedName.includes(detectorNameLower)) {
+          // Return the color from the detector JSON if it exists
+          if (detector.color) {
+            return detector.color;
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error getting detector color from storage:', error);
     }
     
-    // Fallback to category color
-    return '#6b7280'; // Gray default
+    // Fallback to default gray if not found
+    return '#6b7280';
   }
 
   async init() {
@@ -172,14 +123,14 @@ class PopupManager {
       // Now load the actual data
       this.loadResults();
       this.loadHistory();
-      this.loadAdvancedResults();
+      // this.loadAdvancedResults(); // Disabled - Advanced section removed
     }, 100);
   }
 
   async loadSettings() {
     const result = await chrome.storage.sync.get([
       'enabled', 'darkMode', 'apiEnabled', 'apiUrl', 'historyLimit', 
-      'autoUpdateEnabled', 'blacklist', 'cacheEnabled', 'cacheDuration'
+      'blacklist', 'cacheEnabled', 'cacheDuration'
     ]);
     
     
@@ -203,7 +154,6 @@ class PopupManager {
     
     // Load blacklist UI
     this.loadBlacklistUI();
-    this.autoUpdateEnabled = result.autoUpdateEnabled !== false; // Default true
     
     // Update cache stats
     this.updateCacheStats();
@@ -821,6 +771,7 @@ class PopupManager {
   }
 
   displayDetectionsPage() {
+    console.log('🔍 POPUP: displayDetectionsPage() called');
     const resultsList = document.getElementById('resultsList');
     const detectionsPagination = document.getElementById('detectionsPagination');
     const detectionsPaginationInfo = document.getElementById('detectionsPaginationInfo');
@@ -828,7 +779,12 @@ class PopupManager {
     const detectionsPrevBtn = document.getElementById('detectionsPrevBtn');
     const detectionsNextBtn = document.getElementById('detectionsNextBtn');
 
-    if (!resultsList || !this.filteredDetections) return;
+    console.log('🔍 POPUP: filteredDetections:', this.filteredDetections);
+    console.log('🔍 POPUP: filteredDetections count:', this.filteredDetections ? this.filteredDetections.length : 0);
+    if (!resultsList || !this.filteredDetections) {
+      console.log('🔍 POPUP: Missing resultsList or filteredDetections');
+      return;
+    }
 
     const totalItems = this.filteredDetections.length;
     const totalPages = Math.ceil(totalItems / this.detectionsItemsPerPage);
@@ -873,9 +829,12 @@ class PopupManager {
   deduplicateMatches(matches) {
     if (!matches || matches.length === 0) return [];
     
+    // Filter out global type matches before deduplication
+    const filteredMatches = matches.filter(m => m.type !== 'global');
+    
     const uniqueMap = new Map();
     
-    matches.forEach(match => {
+    filteredMatches.forEach(match => {
       // Create a unique key based on type and significant details
       let key = match.type;
       
@@ -889,8 +848,6 @@ class PopupManager {
         key = `${match.type}-${match.pattern}`;
       } else if (match.type === 'dom' && match.selector) {
         key = `${match.type}-${match.selector}`;
-      } else if (match.type === 'global' && match.property) {
-        key = `${match.type}-${match.property}`;
       }
       
       // Only keep the first occurrence of each unique match
@@ -1519,19 +1476,21 @@ class PopupManager {
         // Load results
         setTimeout(() => {
           this.loadResults();
-          this.loadAdvancedResults();
+          // this.loadAdvancedResults(); // Disabled - Advanced section removed
         }, 1000);
       }, 500);
     } catch (error) {
       console.error('Failed to refresh analysis:', error);
       this.showEmptyState();
-      this.showAdvancedEmptyState();
+      // this.showAdvancedEmptyState(); // Coming soon
     }
   }
 
   async loadResults() {
+    console.log('🔍 POPUP: loadResults() called');
     
     if (!this.isEnabled) {
+      console.log('🔍 POPUP: Extension is disabled');
       this.showDisabledState();
       return;
     }
@@ -1541,9 +1500,11 @@ class PopupManager {
     this.currentResults = [];
     
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    console.log('🔍 POPUP: Current tab:', tab.id, tab.url);
     
     // Check if this is a valid URL for content script injection
     if (!this.isValidUrl(tab.url)) {
+      console.log('🔍 POPUP: Invalid URL for content script');
       this.showInvalidUrlState();
       this.updateTabInfo(tab.url);
       return;
@@ -1551,24 +1512,47 @@ class PopupManager {
     
     // Check if URL is blacklisted
     if (await this.isUrlBlacklisted(tab.url)) {
+      console.log('🔍 POPUP: URL is blacklisted');
       this.showBlacklistedState();
       this.updateTabInfo(tab.url);
       return;
     }
     
     try {
+      console.log('🔍 POPUP: Requesting results from background for tab', tab.id);
       // Try to get existing results first
       const response = await chrome.runtime.sendMessage({
         action: 'getTabResults',
         tabId: tab.id
       });
       
-      this.currentResults = (response && response.results) ? response.results : [];
+      console.log('🔍 POPUP: Response from background:', response);
+      // Filter out any 'global' type matches from results
+      let results = (response && response.results) ? response.results : [];
+      results = results.map(result => ({
+        ...result,
+        matches: (result.matches || []).filter(m => m.type !== 'global')
+      }));
+      this.currentResults = results;
+      
+      // If no results from background memory, check storage
+      if (this.currentResults.length === 0) {
+        console.log('🔍 POPUP: No results in memory, checking storage');
+        const storageKey = `detection_${tab.id}`;
+        const storageData = await chrome.storage.local.get(storageKey);
+        if (storageData[storageKey] && storageData[storageKey].results) {
+          this.currentResults = storageData[storageKey].results;
+          console.log('🔍 POPUP: Found results in storage:', this.currentResults.length);
+        }
+      }
+      
+      console.log('🔍 POPUP: Current results count:', this.currentResults.length);
       this.currentTabId = tab.id;
       this.currentTabUrl = tab.url;
       
       // If no results, try to inject content script and analyze
       if (this.currentResults.length === 0) {
+        console.log('🔍 POPUP: No results found, trying to inject content script');
         // Show loading state while we ensure content script is ready
         this.showLoadingState();
         
@@ -1577,7 +1561,9 @@ class PopupManager {
         
         // Check if we got results after ensuring content script
         if (this.currentResults.length > 0) {
+          console.log('🔍 POPUP: Got results after content script injection:', this.currentResults.length);
         } else {
+          console.log('🔍 POPUP: Still no results after content script injection');
         }
       }
       
@@ -1586,10 +1572,12 @@ class PopupManager {
       
       // Final UI update based on results
       if (this.currentResults.length > 0) {
+        console.log('🔍 POPUP: Showing results, count:', this.currentResults.length);
         this.showResults();
         // Add to history
         await this.addToHistory(tab.url, this.currentResults);
       } else {
+        console.log('🔍 POPUP: No results to show, displaying empty state');
         this.showEmptyState();
       }
     } catch (error) {
@@ -1778,7 +1766,13 @@ class PopupManager {
         tabId: tab.id
       });
       
-      this.currentResults = (response && response.results) ? response.results : [];
+      // Filter out any 'global' type matches from results
+      let results = (response && response.results) ? response.results : [];
+      results = results.map(result => ({
+        ...result,
+        matches: (result.matches || []).filter(m => m.type !== 'global')
+      }));
+      this.currentResults = results;
       
       // If still no results, try one more time with a longer wait
       if (this.currentResults.length === 0) {
@@ -1789,7 +1783,13 @@ class PopupManager {
           tabId: tab.id
         });
         
-        this.currentResults = (finalResponse && finalResponse.results) ? finalResponse.results : [];
+        // Filter out any 'global' type matches from results
+        let finalResults = (finalResponse && finalResponse.results) ? finalResponse.results : [];
+        finalResults = finalResults.map(result => ({
+          ...result,
+          matches: (result.matches || []).filter(m => m.type !== 'global')
+        }));
+        this.currentResults = finalResults;
       }
     } catch (error) {
       console.error('🛡️ Popup: Failed to ensure content script:', error);
@@ -1901,10 +1901,14 @@ class PopupManager {
   }
 
   updateResultsDisplay() {
+    console.log('🔍 POPUP: updateResultsDisplay() called');
+    console.log('🔍 POPUP: currentResults:', this.currentResults);
     const countBadge = document.getElementById('detectionCount');
     
     // Filter out disabled rules from the detection results
     const enabledResults = this.filterDisabledRules(this.currentResults);
+    console.log('🔍 POPUP: enabledResults after filtering:', enabledResults);
+    console.log('🔍 POPUP: enabledResults count:', enabledResults.length);
     
     // Store detection data for pagination
     this.allDetections = [...enabledResults];
@@ -2021,13 +2025,14 @@ const div = document.createElement('div');
       matchesByType[match.type].push(match);
     });
     
-    // Create one tag per type (max 3 types shown)
-    const matchTypes = Object.keys(matchesByType);
+    // Create one tag per type (max 3 types shown) - filter out global
+    const matchTypes = Object.keys(matchesByType).filter(type => type !== 'global');
     const matchTags = matchTypes.slice(0, 3).map(type => {
       const typeClass = this.getMatchTypeClass(type);
       const typeName = this.getMatchTypeDisplayName(type);
+      if (!typeName) return ''; // Skip null type names
       return `<span class="match-tag ${typeClass}">${typeName}</span>`;
-    }).join('');
+    }).filter(tag => tag).join('');
     
     const moreTypes = matchTypes.length > 3 ? `<span class="more-matches">+${matchTypes.length - 3} more</span>` : '';
     
@@ -2045,6 +2050,9 @@ const div = document.createElement('div');
     matchesList.className = 'result-matches';
     
     uniqueMatches.forEach(match => {
+      // Skip global type matches
+      if (match.type === 'global') return;
+      
       const matchItem = document.createElement('div');
       matchItem.className = 'match-item';
       
@@ -2162,6 +2170,7 @@ const div = document.createElement('div');
   }
 
   async loadAdvancedTab() {
+    console.log('🛡️ Advanced Tab: Coming Soon');
     
     // First, ensure the tab itself is visible
     const advancedTab = document.getElementById('advancedTab');
@@ -2169,43 +2178,7 @@ const div = document.createElement('div');
       advancedTab.style.display = 'block';
     }
     
-    // Initialize capture terms (sets up event listeners)
-    this.initializeCaptureTerms();
-    
-    // First, ensure we have detection results
-    // If not, trigger a refresh to get them
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tabs.length > 0) {
-      const response = await chrome.runtime.sendMessage({
-        action: 'getTabResults',
-        tabId: tabs[0].id
-      });
-      
-      
-      // If no results, try to trigger content script to send them
-      if (!response || !response.results || response.results.length === 0) {
-        try {
-          await chrome.tabs.sendMessage(tabs[0].id, { action: 'getResults' });
-          // Wait a bit for the content script to respond
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (e) {
-        }
-      }
-    }
-    
-    // Load any previously captured parameters
-    await this.loadCapturedParameters();
-    
-    // Now load the actual results
-    this.loadAdvancedResults();
-    
-    // Set up periodic checking for new captures
-    if (this.captureCheckInterval) {
-      clearInterval(this.captureCheckInterval);
-    }
-    this.captureCheckInterval = setInterval(() => {
-      this.loadCapturedParameters();
-    }, 2000); // Check every 2 seconds
+    // Advanced features coming soon - no functionality needed
   }
 
   // Terms of Service handling
@@ -2488,7 +2461,6 @@ const div = document.createElement('div');
         break;
         
       case 'script':
-      case 'global':
         const content = match.content || '[script content]';
         this.addDetailLine(detailsContainer, 'Content', this.truncateText(content, 80));
         break;
@@ -2559,10 +2531,6 @@ const div = document.createElement('div');
         break;
       case 'script':
         category = 'Script';
-        details = match.content;
-        break;
-      case 'global':
-        category = 'Global';
         details = match.content;
         break;
       case 'dom':
@@ -2678,9 +2646,11 @@ const div = document.createElement('div');
   }
   
   async startCapture() {
+    console.log('🛡️ startCapture called');
+    console.log('🛡️ Selected detections:', this.selectedDetections);
     
     // Check if we have any selections
-    if (this.selectedDetections.size === 0) {
+    if (!this.selectedDetections || this.selectedDetections.size === 0) {
       console.error('🛡️ No detections selected!');
       this.showToast('Please select a detection first!');
       return;
@@ -2691,24 +2661,61 @@ const div = document.createElement('div');
       
       // Notify background script to start capturing
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      console.log('🛡️ Current tab:', tab.id, tab.url);
       
-      const response = await chrome.runtime.sendMessage({
+      const message = {
         action: 'startCaptureMode',
         tabId: tab.id,
         targets: Array.from(this.selectedDetections)
-      });
+      };
+      console.log('🛡️ Sending message to background:', message);
       
+      const response = await chrome.runtime.sendMessage(message);
+      console.log('🛡️ Background response:', response);
+      
+      if (!response || !response.success) {
+        throw new Error('Failed to start capture mode');
+      }
       
       // Show a quick message before closing
-      this.showToast('Capture mode activated! Trigger the captcha now.');
+      this.showToast('Capture mode activated! Now trigger the captcha on the page.');
+      
+      // Update UI to show capturing state
+      document.getElementById('stopCaptureBtn').style.display = 'inline-flex';
+      document.getElementById('startCaptureBtn').style.display = 'none';
+      document.getElementById('captureInstructions').style.display = 'block';
+      
+      // Update instructions to show reload message
+      const instructionsDiv = document.getElementById('captureInstructions');
+      if (instructionsDiv) {
+        instructionsDiv.innerHTML = `
+          <div class="instructions-content">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="#f59e0b"/>
+            </svg>
+            <div>
+              <h4>Capture Mode Active!</h4>
+              <p><strong>This popup will close in 2 seconds.</strong></p>
+              <p>After it closes:</p>
+              <ul style="text-align: left;">
+                <li><strong>Press F5 to refresh the page immediately</strong></li>
+                <li>The reCAPTCHA will be captured on page reload</li>
+                <li>You'll see a notification when capture succeeds</li>
+                <li>Capture auto-stops after 15 seconds</li>
+              </ul>
+            </div>
+          </div>
+        `;
+      }
       
       // Close the popup after a short delay to let the user see the message
       setTimeout(() => {
         window.close();
-      }, 1500);
+      }, 2000);
     } catch (error) {
       console.error('🛡️ Error in startCapture:', error);
-      this.showToast('Error starting capture mode!');
+      this.showToast('Error starting capture mode: ' + error.message);
+      this.isCapturing = false;
     }
   }
   
@@ -2745,14 +2752,24 @@ const div = document.createElement('div');
   }
   
   displayCapturedParameters() {
+    console.log('🎯 displayCapturedParameters called with params:', this.capturedParams);
+    
     const capturedSection = document.getElementById('capturedParameters');
     const emptyState = document.getElementById('advancedEmpty');
     const tableBody = document.getElementById('captureTableBody');
     const captureCount = document.getElementById('captureCount');
     const captureTable = document.getElementById('captureTable');
     
+    console.log('🎯 DOM elements:', {
+      capturedSection: !!capturedSection,
+      emptyState: !!emptyState,
+      tableBody: !!tableBody,
+      captureCount: !!captureCount,
+      captureTable: !!captureTable
+    });
     
     if (!this.capturedParams || this.capturedParams.length === 0) {
+      console.log('🎯 No captures - hiding table');
       // No captures yet - hide the table
       if (capturedSection) {
         capturedSection.style.display = 'none';
@@ -2761,8 +2778,18 @@ const div = document.createElement('div');
       return;
     }
     
-    if (capturedSection) capturedSection.style.display = 'block';
-    if (emptyState) emptyState.style.display = 'none';
+    console.log('🎯 Showing captured parameters table');
+    if (capturedSection) {
+      capturedSection.style.display = 'block';
+      capturedSection.style.visibility = 'visible';
+      // Force display with important to override any other styles
+      capturedSection.style.setProperty('display', 'block', 'important');
+      capturedSection.style.setProperty('visibility', 'visible', 'important');
+    }
+    if (emptyState) {
+      emptyState.style.display = 'none';
+      emptyState.style.visibility = 'hidden';
+    }
     if (captureCount) captureCount.textContent = `${this.capturedParams.length} capture${this.capturedParams.length > 1 ? 's' : ''}`;
     
     if (!tableBody || !captureTable) return;
@@ -2772,22 +2799,29 @@ const div = document.createElement('div');
     
     // Update table headers based on capture types
     const thead = captureTable.querySelector('thead tr');
+    console.log('🎯 Table header element found:', !!thead);
+    console.log('🎯 Capture types:', Array.from(captureTypes));
+    
     if (thead) {
-      let headers = '<th>Website</th>';
+      // Always show reCAPTCHA headers since that's what we're capturing
+      const headers = `
+        <th>Website</th>
+        <th>Site Key</th>
+        <th>Action</th>
+        <th>V2</th>
+        <th>V2 Invisible</th>
+        <th>V3</th>
+        <th>Enterprise</th>
+        <th>S</th>
+        <th>API Domain</th>
+        <th>Actions</th>
+      `;
       
-      // Add type-specific headers
-      if (captureTypes.has('recaptcha')) {
-        headers += '<th>Site Key</th><th>Action</th><th>V2</th><th>Invisible</th><th>V3</th><th>Enterprise</th><th>S Required</th><th>API Domain</th>';
-      } else if (captureTypes.has('hcaptcha')) {
-        headers += '<th>Site Key</th><th>Type</th><th>Enterprise</th><th>RQData</th><th>API Endpoint</th>';
-      } else if (captureTypes.has('funcaptcha')) {
-        headers += '<th>Public Key</th><th>Subdomain</th><th>Data Blob</th><th>BDA</th>';
-      } else if (captureTypes.has('datadome')) {
-        headers += '<th>Captcha URL</th><th>Has Challenge</th><th>Cookie Found</th>';
-      }
-      
-      headers += '<th>Actions</th>';
       thead.innerHTML = headers;
+      console.log('🎯 Headers set to:', headers);
+      console.log('🎯 Actual thead HTML after setting:', thead.innerHTML);
+    } else {
+      console.error('🎯 ERROR: thead tr not found!');
     }
     
     tableBody.innerHTML = '';
@@ -2795,41 +2829,44 @@ const div = document.createElement('div');
     this.capturedParams.forEach((capture, index) => {
       const row = document.createElement('tr');
       const boolEmoji = (value) => value ? '✅' : '❌';
-      const captchaType = capture.captcha_type || 'recaptcha';
+      const captchaType = (capture.captcha_type || 'recaptcha').toLowerCase();
       
-      let rowContent = `<td title="${capture.site_url || capture.websiteURL || ''}">${this.truncateUrl(capture.site_url || capture.websiteURL || '-')}</td>`;
+      // Access parameters from advancedParameters if they exist
+      const params = capture.advancedParameters || capture;
+      
+      let rowContent = `<td title="${params.site_url || params.websiteURL || ''}">${this.truncateUrl(params.site_url || params.websiteURL || '-')}</td>`;
       
       if (captchaType === 'recaptcha') {
         rowContent += `
-          <td title="${capture.site_key || ''}">${this.formatSiteKey(capture.site_key || '-')}</td>
-          <td>${capture.action || '-'}</td>
-          <td class="center-cell">${boolEmoji(capture.recaptchaV2Normal)}</td>
-          <td class="center-cell">${boolEmoji(capture.isInvisible)}</td>
-          <td class="center-cell">${boolEmoji(capture.isReCaptchaV3)}</td>
-          <td class="center-cell">${boolEmoji(capture.is_enterprise)}</td>
-          <td class="center-cell">${boolEmoji(capture.is_s_required)}</td>
-          <td>${capture.apiDomain || '-'}</td>
+          <td title="${params.site_key || params.sitekey || ''}">${this.formatSiteKey(params.site_key || params.sitekey || '-')}</td>
+          <td>${params.action || '-'}</td>
+          <td class="center-cell">${boolEmoji(params.recaptchaV2Normal)}</td>
+          <td class="center-cell">${boolEmoji(params.isInvisible || params.is_invisible)}</td>
+          <td class="center-cell">${boolEmoji(params.isReCaptchaV3)}</td>
+          <td class="center-cell">${boolEmoji(params.is_enterprise)}</td>
+          <td class="center-cell">${boolEmoji(params.s === 'yes' || params.is_s_required)}</td>
+          <td>${params.apiDomain || '-'}</td>
         `;
       } else if (captchaType === 'hcaptcha') {
         rowContent += `
-          <td title="${capture.site_key || capture.websiteKey || ''}">${this.formatSiteKey(capture.site_key || capture.websiteKey || '-')}</td>
-          <td>${capture.type || 'HCaptchaTask'}</td>
-          <td class="center-cell">${boolEmoji(capture.is_enterprise || capture.isEnterprise)}</td>
-          <td class="center-cell">${boolEmoji(capture.rqdata || capture.is_rqdata_required)}</td>
-          <td>${capture.apiEndpoint || capture.endpoint || '-'}</td>
+          <td title="${params.site_key || params.websiteKey || ''}">${this.formatSiteKey(params.site_key || params.websiteKey || '-')}</td>
+          <td>${params.type || 'HCaptchaTask'}</td>
+          <td class="center-cell">${boolEmoji(params.is_enterprise || params.isEnterprise)}</td>
+          <td class="center-cell">${boolEmoji(params.rqdata || params.is_rqdata_required)}</td>
+          <td>${params.apiEndpoint || params.endpoint || '-'}</td>
         `;
       } else if (captchaType === 'funcaptcha') {
         rowContent += `
-          <td title="${capture.websitePublicKey || ''}">${this.formatSiteKey(capture.websitePublicKey || '-')}</td>
-          <td>${capture.funcaptchaApiJSSubdomain || '-'}</td>
-          <td class="center-cell">${boolEmoji(capture.data || capture.hasDataBlob)}</td>
-          <td title="${capture.bda || ''}">${capture.bda ? 'Present' : '-'}</td>
+          <td title="${params.websitePublicKey || ''}">${this.formatSiteKey(params.websitePublicKey || '-')}</td>
+          <td>${params.funcaptchaApiJSSubdomain || '-'}</td>
+          <td class="center-cell">${boolEmoji(params.data || params.hasDataBlob)}</td>
+          <td title="${params.bda || ''}">${params.bda ? 'Present' : '-'}</td>
         `;
       } else if (captchaType === 'datadome') {
         rowContent += `
-          <td title="${capture.captchaUrl || ''}">${this.truncateUrl(capture.captchaUrl || '-')}</td>
-          <td class="center-cell">${boolEmoji(capture.is_datadome_challenge || capture.datadome_challenge)}</td>
-          <td class="center-cell">${boolEmoji(capture.datadome || capture.is_datadome)}</td>
+          <td title="${params.captchaUrl || ''}">${this.truncateUrl(params.captchaUrl || '-')}</td>
+          <td class="center-cell">${boolEmoji(params.is_datadome_challenge || params.datadome_challenge)}</td>
+          <td class="center-cell">${boolEmoji(params.datadome || params.is_datadome)}</td>
         `;
       }
       
@@ -2887,44 +2924,47 @@ const div = document.createElement('div');
   }
   
   generateCaptchaJson(capture) {
+    // Access parameters from advancedParameters if they exist
+    const params = capture.advancedParameters || capture;
+    
     // Generate JSON similar to Capsolver format
     let taskType;
-    if (capture.isReCaptchaV3) {
-      taskType = capture.is_enterprise ? 'ReCaptchaV3EnterpriseTaskProxyless' : 'ReCaptchaV3TaskProxyLess';
+    if (params.isReCaptchaV3) {
+      taskType = params.is_enterprise ? 'ReCaptchaV3EnterpriseTaskProxyless' : 'ReCaptchaV3TaskProxyLess';
     } else {
-      taskType = capture.is_enterprise ? 'ReCaptchaV2EnterpriseTaskProxyLess' : 'ReCaptchaV2TaskProxyLess';
+      taskType = params.is_enterprise ? 'ReCaptchaV2EnterpriseTaskProxyLess' : 'ReCaptchaV2TaskProxyLess';
     }
     
     const jsonData = {
       clientKey: 'YOUR_API_KEY',
       task: {
         type: taskType,
-        websiteURL: capture.site_url,
-        websiteKey: capture.site_key
+        websiteURL: params.site_url,
+        websiteKey: params.site_key || params.sitekey
       }
     };
     
-    if (capture.anchor) {
-      jsonData.task.anchor = capture.anchor;
+    if (params.anchor) {
+      jsonData.task.anchor = params.anchor;
     }
     
-    if (capture.reload) {
-      jsonData.task.reload = capture.reload;
+    if (params.reload) {
+      jsonData.task.reload = params.reload;
     }
     
-    if (capture.apiDomain) {
-      jsonData.task.apiDomain = capture.apiDomain;
+    if (params.apiDomain) {
+      jsonData.task.apiDomain = params.apiDomain;
     }
     
-    if (capture.isReCaptchaV3 && capture.action) {
-      jsonData.task.pageAction = capture.action;
+    if (params.isReCaptchaV3 && params.action) {
+      jsonData.task.pageAction = params.action;
     }
     
-    if (capture.isInvisible) {
+    if (params.isInvisible || params.is_invisible) {
       jsonData.task.isInvisible = true;
     }
     
-    if (capture.is_s_required) {
+    if (params.s === 'yes' || params.is_s_required) {
       jsonData.task.enterprisePayload = {
         s: 'SOME_ADDITIONAL_TOKEN'
       };
@@ -2933,26 +2973,37 @@ const div = document.createElement('div');
     return JSON.stringify(jsonData, null, 2);
   }
   
-  clearCaptures() {
+  async clearCaptures() {
     this.capturedParams = [];
     this.displayCapturedParameters();
     
-    // Clear in background script too
-    chrome.runtime.sendMessage({ action: 'clearCaptures' });
+    // Clear in background script too - need to pass tabId
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    chrome.runtime.sendMessage({ 
+      action: 'clearCaptures',
+      tabId: tab.id 
+    });
   }
   
   async loadCapturedParameters() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    console.log('🎯 Loading captured parameters for tab:', tab.id);
+    console.log('🎯 Current tab URL:', tab.url);
+    
     const response = await chrome.runtime.sendMessage({
       action: 'getCapturedParameters',
       tabId: tab.id
     });
     
+    console.log('🎯 getCapturedParameters response:', response);
+    console.log('🎯 Response captures array:', response?.captures);
     
     if (response && response.captures && response.captures.length > 0) {
+      console.log('🎯 Found captures:', response.captures);
       this.capturedParams = response.captures;
       this.displayCapturedParameters();
     } else {
+      console.log('🎯 No captures found');
       this.capturedParams = [];
       // Still call display to update UI (will hide table if no captures)
       this.displayCapturedParameters();
@@ -3073,13 +3124,14 @@ const div = document.createElement('div');
       matchesByType[match.type].push(match);
     });
     
-    // Create one tag per type (max 3 types shown)
-    const matchTypes = Object.keys(matchesByType);
+    // Create one tag per type (max 3 types shown) - filter out global
+    const matchTypes = Object.keys(matchesByType).filter(type => type !== 'global');
     const matchTags = matchTypes.slice(0, 3).map(type => {
       const typeClass = this.getMatchTypeClass(type);
       const typeName = this.getMatchTypeDisplayName(type);
+      if (!typeName) return ''; // Skip null type names
       return `<span class="match-tag ${typeClass}">${typeName}</span>`;
-    }).join('');
+    }).filter(tag => tag).join('');
     
     const moreTypes = matchTypes.length > 3 ? `<span class="more-matches">+${matchTypes.length - 3} more</span>` : '';
     
@@ -3146,10 +3198,11 @@ const div = document.createElement('div');
       'header': 'Headers',
       'url': 'URLs',
       'script': 'Scripts',
-      'dom': 'DOM Elements',
-      'global': 'Global'
+      'dom': 'DOM Elements'
     };
-    return typeNames[type] || type;
+    // Filter out global type completely
+    if (type === 'global') return null;
+    return typeNames[type] || null;
   }
 
   getMatchCategoryAndDetails(match) {
@@ -3171,10 +3224,6 @@ const div = document.createElement('div');
         break;
       case 'script':
         category = 'Script';
-        details = match.content;
-        break;
-      case 'global':
-        category = 'Global';
         details = match.content;
         break;
       case 'dom':
@@ -3273,378 +3322,6 @@ const div = document.createElement('div');
     }
   }
 
-  loadExportTab() {
-    // Export tab shows "Coming Soon" message - no functionality needed yet
-  }
-
-  populateExportDetectionList() {
-    const exportDetectionList = document.getElementById('exportDetectionList');
-    exportDetectionList.innerHTML = '';
-    
-    this.currentResults.forEach((detection, index) => {
-      const detectionItem = document.createElement('div');
-      detectionItem.className = 'detection-select-item';
-      detectionItem.dataset.detectionIndex = index;
-      detectionItem.innerHTML = `
-        <span class="detection-name">${detection.name}</span>
-        <span class="detection-confidence">${detection.confidence}% confidence</span>
-      `;
-      
-      detectionItem.addEventListener('click', () => {
-        // Remove previous selection
-        document.querySelectorAll('#exportDetectionList .detection-select-item').forEach(item => {
-          item.classList.remove('selected');
-        });
-        
-        // Add selection to clicked item
-        detectionItem.classList.add('selected');
-        
-        // Store selected detection
-        this.selectedExportDetection = detection;
-        
-        // Clear any previous preview
-        this.clearExportPreview();
-      });
-      
-      // Select first detection by default
-      if (index === 0) {
-        detectionItem.classList.add('selected');
-        this.selectedExportDetection = detection;
-      }
-      
-      exportDetectionList.appendChild(detectionItem);
-    });
-  }
-  
-  setupExportInterface() {
-    // Format selector event listeners
-    const formatOptions = document.querySelectorAll('input[name="exportFormat"]');
-    const codeLanguageSelector = document.getElementById('codeLanguageSelector');
-    
-    formatOptions.forEach(option => {
-      option.addEventListener('change', (e) => {
-        if (e.target.value === 'code') {
-          codeLanguageSelector.style.display = 'block';
-        } else {
-          codeLanguageSelector.style.display = 'none';
-        }
-        this.selectedFormat = e.target.value;
-        this.clearExportPreview();
-      });
-    });
-    
-    // Language selector
-    const codeLanguageElement = document.getElementById('codeLanguage');
-    if (codeLanguageElement) {
-      codeLanguageElement.addEventListener('change', (e) => {
-        this.selectedLanguage = e.target.value;
-        this.clearExportPreview();
-      });
-    }
-    
-    // Export action buttons
-    const previewExportBtn = document.getElementById('previewExport');
-    if (previewExportBtn) {
-      previewExportBtn.addEventListener('click', () => this.previewExport());
-    }
-    
-    const copyExportBtn = document.getElementById('copyExport');
-    if (copyExportBtn) {
-      copyExportBtn.addEventListener('click', () => this.copyExport());
-    }
-    
-    const downloadExportBtn = document.getElementById('downloadExport');
-    if (downloadExportBtn) {
-      downloadExportBtn.addEventListener('click', () => this.downloadExport());
-    }
-    
-    // Initialize
-    this.selectedFormat = 'json';
-    this.selectedLanguage = 'javascript';
-    this.selectedProvider = null;
-  }
-
-  clearExportPreview() {
-    const exportPreview = document.getElementById('exportPreview');
-    exportPreview.style.display = 'none';
-    
-    // Enable/disable buttons based on selection
-    const buttons = document.querySelectorAll('.export-btn:not(.preview-btn)');
-    buttons.forEach(btn => btn.disabled = true);
-  }
-
-  async loadProviderButtons() {
-    try {
-      // Check if providers are already cached
-      if (this.cachedProviders) {
-        const data = { providers: this.cachedProviders };
-        this.renderProviderButtons(data);
-        return;
-      }
-      
-      // Load from modular provider structure
-      const response = await fetch(chrome.runtime.getURL('providers/index.json'));
-      const index = await response.json();
-      
-      // Load individual provider files
-      const providers = {};
-      for (const [id, config] of Object.entries(index.providers)) {
-        try {
-          const providerResponse = await fetch(chrome.runtime.getURL(`providers/${config.file}`));
-          providers[id] = await providerResponse.json();
-        } catch (e) {
-          console.error(`Failed to load provider ${id}:`, e);
-        }
-      }
-      
-      // Cache the providers
-      this.cachedProviders = providers;
-      
-      const data = { providers };
-      this.renderProviderButtons(data);
-      
-    } catch (error) {
-      console.error('Failed to load export providers:', error);
-    }
-  }
-
-  renderProviderButtons(data) {
-    const providerGrid = document.getElementById('providerQuickGrid');
-    if (!providerGrid) return;
-    
-    providerGrid.innerHTML = '';
-    
-    Object.entries(data.providers).forEach(([key, provider]) => {
-      const button = document.createElement('button');
-      button.className = 'provider-quick-btn';
-      button.innerHTML = provider.name;
-      button.dataset.providerId = key;
-      button.addEventListener('click', (e) => this.selectProvider(e.target, key));
-      providerGrid.appendChild(button);
-    });
-    
-    // Add generic export button
-    const genericBtn = document.createElement('button');
-    genericBtn.className = 'provider-quick-btn';
-    genericBtn.innerHTML = 'Generic JSON';
-    genericBtn.dataset.providerId = 'generic';
-    genericBtn.addEventListener('click', (e) => this.selectProvider(e.target, 'generic'));
-    providerGrid.appendChild(genericBtn);
-  }
-
-  selectProvider(element, providerId) {
-    // Remove selected class from all buttons and cards
-    document.querySelectorAll('.provider-quick-btn, .provider-card').forEach(el => {
-      el.classList.remove('selected');
-    });
-    
-    // Add selected class to clicked element
-    element.classList.add('selected');
-    this.selectedProvider = providerId;
-    
-    // Clear preview if in export modal
-    if (document.getElementById('exportModal').style.display === 'flex') {
-      this.clearExportPreview();
-    }
-    
-    // Show provider config if in settings
-    if (element.classList.contains('provider-card')) {
-      setTimeout(() => this.showProviderConfig(providerId), 300);
-    }
-  }
-
-  loadExportSummary() {
-    const exportSummary = document.getElementById('exportSummary');
-    exportSummary.innerHTML = `
-      <h5>Current Detections</h5>
-      ${this.currentResults.map(result => `
-        <div class="detection-summary-item">
-          <span class="name">${result.name}</span>
-          <span class="confidence">${result.confidence}%</span>
-        </div>
-      `).join('')}
-    `;
-  }
-
-  previewExport() {
-    if (!this.selectedProvider) {
-      this.showToast('Please select a provider first', 'error');
-      return;
-    }
-    
-    this.generateExportData(this.selectedProvider, (exportData) => {
-      const exportPreview = document.getElementById('exportPreview');
-      const exportOutput = document.getElementById('exportOutput');
-      
-      let formattedData;
-      if (this.selectedFormat === 'json') {
-        formattedData = JSON.stringify(exportData, null, 2);
-      } else {
-        formattedData = this.generateCodeSnippet(exportData, this.selectedLanguage);
-      }
-      
-      exportOutput.value = formattedData;
-      exportPreview.style.display = 'block';
-      
-      // Enable copy and download buttons
-      const buttons = document.querySelectorAll('.export-btn:not(.preview-btn)');
-      buttons.forEach(btn => btn.disabled = false);
-      
-      this.currentExportData = formattedData;
-    });
-  }
-
-  copyExport() {
-    if (this.currentExportData) {
-      navigator.clipboard.writeText(this.currentExportData).then(() => {
-        this.showToast('Export data copied to clipboard!');
-      }).catch(err => {
-        this.showToast('Failed to copy export data', 'error');
-      });
-    }
-  }
-
-  downloadExport() {
-    if (this.currentExportData) {
-      const filename = this.getExportFilename();
-      const blob = new Blob([this.currentExportData], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      this.showToast(`Export downloaded as ${filename}`);
-    }
-  }
-
-  getExportFilename() {
-    const provider = this.selectedProvider || 'generic';
-    const format = this.selectedFormat;
-    const timestamp = new Date().toISOString().slice(0, 10);
-    
-    let extension = format === 'json' ? 'json' : this.getCodeFileExtension();
-    return `${provider}_export_${timestamp}.${extension}`;
-  }
-
-  getCodeFileExtension() {
-    const extensions = {
-      'javascript': 'js',
-      'python': 'py',
-      'curl': 'sh',
-      'php': 'php'
-    };
-    return extensions[this.selectedLanguage] || 'txt';
-  }
-
-  generateExportData(providerId, callback) {
-    chrome.runtime.sendMessage({
-      action: 'exportData',
-      tabId: this.currentTabId,
-      provider: providerId
-    }, (response) => {
-      if (response.error) {
-        this.showToast('Export failed: ' + response.error, 'error');
-      } else {
-        callback(response.data);
-      }
-    });
-  }
-
-  generateCodeSnippet(data, language) {
-    switch (language) {
-      case 'javascript':
-        return this.generateJavaScriptCode(data);
-      case 'python':
-        return this.generatePythonCode(data);
-      case 'curl':
-        return this.generateCurlCode(data);
-      case 'php':
-        return this.generatePhpCode(data);
-      default:
-        return JSON.stringify(data, null, 2);
-    }
-  }
-
-  generateJavaScriptCode(data) {
-    return `// ${data.provider || 'Generic'} API Request
-const apiData = ${JSON.stringify(data, null, 2)};
-
-// Using fetch
-fetch('API_ENDPOINT_HERE', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(apiData)
-})
-.then(response => response.json())
-.then(data => {
-})
-.catch(error => {
-  console.error('Error:', error);
-});`;
-  }
-
-  generatePythonCode(data) {
-    return `# ${data.provider || 'Generic'} API Request
-import requests
-import json
-
-api_data = ${JSON.stringify(data, null, 2).replace(/"/g, "'")}
-
-response = requests.post(
-    'API_ENDPOINT_HERE',
-    headers={'Content-Type': 'application/json'},
-    json=api_data
-)
-
-if response.status_code == 200:
-    result = response.json()
-    print("Success:", result)
-else:
-    print("Error:", response.status_code, response.text)`;
-  }
-
-  generateCurlCode(data) {
-    return `#!/bin/bash
-# ${data.provider || 'Generic'} API Request
-
-curl -X POST 'API_ENDPOINT_HERE' \\
-  -H 'Content-Type: application/json' \\
-  -d '${JSON.stringify(data).replace(/'/g, "\\'")}'`;
-  }
-
-  generatePhpCode(data) {
-    return `<?php
-// ${data.provider || 'Generic'} API Request
-
-$api_data = json_decode('${JSON.stringify(data)}', true);
-
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, 'API_ENDPOINT_HERE');
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($api_data));
-curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    'Content-Type: application/json'
-));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-curl_close($ch);
-
-$result = json_decode($response, true);
-if ($result) {
-    echo "Success: " . print_r($result, true);
-} else {
-    echo "Error: " . $response;
-}
-?>`;
-  }
 
   // History Management
   async loadHistory() {
@@ -4070,7 +3747,6 @@ if ($result) {
       'header': 'match-type-header',
       'script': 'match-type-script',
       'dom': 'match-type-dom',
-      'global': 'match-type-global',
       'url': 'match-type-url'
     };
     return typeMap[type] || 'match-type-default';
@@ -4084,8 +3760,6 @@ if ($result) {
         return `${match.name} (Header)`;
       case 'script':
         return match.content ? `${match.content.substring(0, 20)}... (Script)` : 'Script';
-      case 'global':
-        return match.content ? `${match.content.substring(0, 20)}... (Global)` : 'Global';
       case 'url':
         return 'URL Pattern';
       case 'dom':
@@ -4504,15 +4178,15 @@ if ($result) {
           // Skip if detector doesn't have required properties
           if (!detector.name) continue;
           
-          // Get unique detector color
-          const detectorColor = this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category) || '#6b7280';
+          // Get unique detector color from JSON file or fallback to category color
+          const detectorColor = detector.color || this.getCategoryColor(detector.category) || '#6b7280';
           
           const rule = {
             id: detectorId,
             name: detector.name,
             category: detector.category || 'Unknown',
             icon: detector.icon || 'custom.png',
-            color: detector.color || detectorColor,
+            color: detectorColor,
             enabled: detector.enabled !== false,
             isDefault: true, // Mark as default for UI purposes only
             lastUpdated: detector.lastUpdated || detector.version || new Date().toISOString(),
@@ -4547,7 +4221,8 @@ if ($result) {
       // Ensure all custom rules have proper colors
       this.customRules = this.customRules.map(rule => {
         if (!rule.color) {
-          rule.color = this.getDetectorColor(rule.name) || this.getCategoryColor(rule.category) || '#6b7280';
+          // Use category color as fallback - colors are now in detector JSON files
+          rule.color = this.getCategoryColor(rule.category) || '#6b7280';
         }
         return rule;
       });
@@ -4686,23 +4361,25 @@ if ($result) {
   }
 
   async loadAdvancedResults() {
+    return; // Disabled - Advanced section removed
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tabs.length === 0) {
         return;
       }
 
-      
-      // Use the same data source as main detection to ensure consistency
+      // Load detection results to check if captchas are present
+      // This is needed to show the capture UI, but we won't display DOM parameters
       const response = await chrome.runtime.sendMessage({
         action: 'getTabResults',
         tabId: tabs[0].id
       });
       
-      
       if (response && response.results && Array.isArray(response.results)) {
-        response.results.forEach((result, index) => {
-        });
+        // Pass the results to updateAdvancedSection which will:
+        // 1. Check if captchas are detected
+        // 2. Show the capture UI if captchas are found
+        // 3. NOT display automatic DOM-extracted parameters
         this.updateAdvancedSection(response.results);
       } else {
         this.updateAdvancedSection([]);
@@ -4734,24 +4411,61 @@ if ($result) {
   }
 
   updateAdvancedSection(advancedResults) {
+    return; // Disabled - Advanced section removed
     const advancedSection = document.getElementById('capturedParameters');  // Fixed ID
     const advancedEmpty = document.getElementById('advancedEmpty');
     const tableBody = document.getElementById('captureTableBody');  // Fixed ID based on HTML
     const subtitle = document.querySelector('.capture-subtitle');  // Fixed selector
     const triggerBadge = document.getElementById('captchaTriggerBadge');
+    const captureSelectionSection = document.getElementById('captureSelectionSection');
+    const captureTermsSection = document.getElementById('captureTermsSection');
+    const captureHeader = document.querySelector('.capture-header');
 
     if (!advancedSection || !advancedEmpty || !tableBody) {
+      console.error('🛡️ Advanced: Missing required elements', {
+        advancedSection: !!advancedSection,
+        advancedEmpty: !!advancedEmpty,
+        tableBody: !!tableBody
+      });
       return;
     }
 
+    // START CLEAN - Hide everything first
+    console.log('🛡️ Advanced: Starting clean - hiding all sections');
+    if (advancedSection) {
+      advancedSection.style.display = 'none';
+      advancedSection.style.visibility = 'hidden';
+    }
+    if (advancedEmpty) {
+      advancedEmpty.style.display = 'none';
+      advancedEmpty.style.visibility = 'hidden';
+    }
+    if (captureSelectionSection) {
+      captureSelectionSection.style.display = 'none';
+      captureSelectionSection.style.visibility = 'hidden';
+    }
+    if (captureTermsSection) {
+      captureTermsSection.style.display = 'none';
+      captureTermsSection.style.visibility = 'hidden';
+    }
+    if (captureHeader) {
+      captureHeader.style.display = 'none';
+      captureHeader.style.visibility = 'hidden';
+    }
+
     // Debug: Log what we received
+    console.log('🛡️ Advanced: updateAdvancedSection called with:', advancedResults);
     
     // Ensure advancedResults is an array
     if (!Array.isArray(advancedResults)) {
       advancedResults = [];
     }
     
-    if (advancedResults.length > 0) {
+    // Keep the results to check for captcha detection
+    // But don't show DOM-extracted parameters automatically
+    const originalResults = [...advancedResults];
+    
+    if (originalResults.length > 0) {
       advancedResults.forEach((result, index) => {
         console.log(`🛡️ Result ${index}:`, {
           name: result.name,
@@ -4763,74 +4477,65 @@ if ($result) {
       });
     }
 
-    // Check for any reCAPTCHA detection (including all forms)
-    const recaptchaResults = advancedResults.filter(r => {
+    // Check for any CAPTCHA detection (reCAPTCHA, hCaptcha, FunCaptcha, etc.)
+    const captchaResults = originalResults.filter(r => {
       if (!r) return false;
       
       // More lenient check - normalize both name and key
       const normalizedName = (r.name || '').toLowerCase().replace(/[\s-_]/g, '');
       const normalizedKey = (r.key || '').toLowerCase().replace(/[\s-_]/g, '');
+      const category = (r.category || '').toLowerCase();
       
-      // Check if any of these conditions match
-      const isRecaptcha = 
+      // Check if it's any type of captcha
+      const isCaptcha = 
+        category === 'captcha' ||
+        normalizedName.includes('captcha') ||
+        normalizedKey.includes('captcha') ||
         normalizedName.includes('recaptcha') ||
         normalizedKey.includes('recaptcha') ||
         normalizedKey === 'recaptcha' ||
         normalizedName.includes('googlerecaptcha') ||
         r.name === 'Google reCAPTCHA' ||
-        r.name === 'reCAPTCHA';
+        r.name === 'reCAPTCHA' ||
+        r.name === 'hCaptcha' ||
+        r.name === 'FunCaptcha' ||
+        r.name === 'GeeTest';
       
-      if (isRecaptcha) {
-        console.log('🛡️ Found reCAPTCHA result:', {
+      if (isCaptcha) {
+        console.log('🛡️ Found CAPTCHA result:', {
           name: r.name,
           key: r.key,
+          category: r.category,
           normalizedName,
-          normalizedKey,
-          hasAdvancedParams: !!r.advancedParameters,
-          advancedParams: r.advancedParameters
+          normalizedKey
         });
       }
       
-      return isRecaptcha;
+      return isCaptcha;
     });
     
 
-    if (recaptchaResults.length === 0) {
-      // No reCAPTCHA detected - show empty state and hide capture interface
+    if (captchaResults.length === 0) {
+      // No CAPTCHA detected - show empty state and hide capture interface
       this.showAdvancedEmptyState();
       return;
     }
     
-    // Filter network captured results for the table display
-    const networkCapturedResults = advancedResults.filter(r => 
-      r.advancedParameters && r.advancedParameters.network_captured
-    );
+    // Don't filter for DOM-extracted parameters - we don't want to display them
+    // Only network-captured parameters should be shown via displayCapturedParameters()
+    const advancedCapturedResults = []; // Empty - we don't display DOM params
+    
+    console.log('🛡️ Advanced: Not displaying DOM-extracted parameters');
+    
+    // Network captures are handled by displayCapturedParameters() separately
+    const networkCapturedResults = [];
+    
+    console.log('🛡️ Advanced: Network captures will be shown via displayCapturedParameters()');
 
-    // reCAPTCHA detected - hide empty state and show capture interface
-    const captureSelectionSection = document.getElementById('captureSelectionSection');
-    const captureTermsSection = document.getElementById('captureTermsSection');
-    const captureHeader = document.querySelector('.capture-header');
+    // CAPTCHA detected - show capture header
+    console.log('🛡️ Advanced: CAPTCHA detected, preparing to show capture UI');
     
-    
-    // Hide empty state - make sure it stays hidden
-    if (advancedEmpty) {
-      advancedEmpty.style.display = 'none !important';
-      advancedEmpty.style.visibility = 'hidden';
-      advancedEmpty.style.setProperty('display', 'none', 'important');
-    }
-    
-    // Only show captured parameters table if we have actual captured data
-    if (advancedSection) {
-      if (networkCapturedResults.length > 0) {
-        // Only show if we have captured parameters
-        advancedSection.style.display = 'block';
-        advancedSection.style.visibility = 'visible';
-      } else {
-        // Hide the table - no captures yet
-        advancedSection.style.display = 'none';
-        advancedSection.style.visibility = 'hidden';
-      }
-    }
+    // Show capture header
     if (captureHeader) {
       captureHeader.style.display = 'block';
       captureHeader.style.visibility = 'visible';
@@ -4843,6 +4548,7 @@ if ($result) {
     // Show appropriate capture interface based on terms acceptance
     chrome.storage.local.get(['captureTermsAccepted'], (result) => {
       if (result.captureTermsAccepted) {
+        // User accepted terms - show capture selection UI
         if (captureTermsSection) {
           captureTermsSection.style.display = 'none';
           captureTermsSection.style.visibility = 'hidden';
@@ -4852,13 +4558,19 @@ if ($result) {
           captureSelectionSection.style.visibility = 'visible';
           
           // Set the current results before initializing
-          this.currentResults = recaptchaResults; // Use the detected reCAPTCHA results
+          this.currentResults = captchaResults; // Use the detected CAPTCHA results
           
           // IMPORTANT: Initialize capture mode to set up event listeners!
           // This also calls loadDetectionsForCapture() internally
           this.initializeCaptureMode();
         }
+        // Ensure captured parameters table stays hidden until we have captures
+        if (advancedSection) {
+          advancedSection.style.display = 'none';
+          advancedSection.style.visibility = 'hidden';
+        }
       } else {
+        // User hasn't accepted terms - show terms first
         if (captureTermsSection) {
           captureTermsSection.style.display = 'block';
           captureTermsSection.style.visibility = 'visible';
@@ -4867,29 +4579,31 @@ if ($result) {
           captureSelectionSection.style.display = 'none';
           captureSelectionSection.style.visibility = 'hidden';
         }
+        // Hide captured parameters table
+        if (advancedSection) {
+          advancedSection.style.display = 'none';
+          advancedSection.style.visibility = 'hidden';
+        }
       }
     });
     
-    // Update subtitle based on what we have
+    // Update subtitle - always show capture prompt since we don't display DOM params
     if (subtitle) {
-      if (networkCapturedResults.length > 0) {
-        subtitle.textContent = `Captured ${networkCapturedResults.length} captcha configuration${networkCapturedResults.length > 1 ? 's' : ''}`;
-      } else {
-        subtitle.textContent = `reCAPTCHA detected - click "Start Capturing" to capture parameters`;
-      }
+      const captchaNames = [...new Set(captchaResults.map(r => r.name))].join(', ');
+      subtitle.textContent = `${captchaNames} detected - click "Start Capturing" to capture parameters`;
     }
     
     // Clear existing table rows
     tableBody.innerHTML = '';
 
-    // Get the table header row
-    const tableHeaders = document.querySelector('#captureTable thead tr');
+    // Skip displaying DOM-extracted parameters in the table
+    // Network-captured parameters are displayed via displayCapturedParameters()
     
-    // Determine captcha type and set appropriate headers
-    if (networkCapturedResults.length > 0) {
-      const firstResult = networkCapturedResults[0];
+    // Don't populate the table with DOM-extracted data
+    if (false) { // Disabled - we don't show DOM parameters
+      const firstResult = advancedCapturedResults[0];
       
-      if (firstResult.name === 'reCAPTCHA' && tableHeaders) {
+      if ((firstResult.name === 'reCAPTCHA' || firstResult.name === 'Google reCAPTCHA') && tableHeaders) {
         // Set reCAPTCHA headers (from panel.html)
         tableHeaders.innerHTML = `
           <th>Site URL</th>
@@ -4904,8 +4618,8 @@ if ($result) {
         `;
         
         // Display reCAPTCHA rows
-        networkCapturedResults.forEach(result => {
-          if (result.name === 'reCAPTCHA') {
+        advancedCapturedResults.forEach(result => {
+          if (result.name === 'reCAPTCHA' || result.name === 'Google reCAPTCHA') {
             const params = result.advancedParameters || {};
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -4970,6 +4684,7 @@ if ($result) {
   }
 
   showAdvancedEmptyState() {
+    return; // Disabled - Advanced section removed
     
     // Get all elements that should be hidden when no reCAPTCHA is detected
     const advancedSection = document.getElementById('capturedParameters');  // Fixed ID
@@ -5239,8 +4954,8 @@ if ($result) {
     const colorPicker = document.getElementById('ruleColor');
     const colorPreview = document.getElementById('colorPreview');
     if (colorPicker && colorPreview) {
-      // Ensure rule has a color - detector-specific first, then category fallback
-      const ruleColor = rule.color || this.getDetectorColor(rule.name) || this.getCategoryColor(rule.category) || '#6b7280';
+      // Ensure rule has a color - use existing or category fallback
+      const ruleColor = rule.color || this.getCategoryColor(rule.category) || '#6b7280';
       colorPicker.value = ruleColor;
       colorPreview.style.background = ruleColor;
     }
@@ -5598,9 +5313,9 @@ if ($result) {
     }
     let color = document.getElementById('ruleColor').value;
     
-    // Use detector-specific color first, then category default if no custom color provided
+    // Use category default if no custom color provided
     if (!color || color === '#000000') {
-      color = this.getDetectorColor(name) || this.getCategoryColor(category);
+      color = this.getCategoryColor(category) || '#6b7280';
     }
     
     const now = new Date().toISOString();

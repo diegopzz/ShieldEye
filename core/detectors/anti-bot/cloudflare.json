@@ -9,7 +9,6 @@
   "website": "https://www.cloudflare.com/products/bot-management/",
   "icon": "cloudflare.png",
   "description": "AI-powered bot detection and mitigation with global CDN integration",
-  "tags": ["cdn", "turnstile", "challenge", "ai-powered"],
   "detection": {
     "cookies": [
       {

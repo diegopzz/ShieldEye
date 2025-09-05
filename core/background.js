@@ -22,11 +22,8 @@ class BackgroundService {
   
   async initCaptureManagers() {
     try {
-      // Initialize only reCAPTCHA manager
-      this.recaptchaManager = {
-        anchorData: new Map(),
-        capturedParams: new Map()
-      };
+      // RecaptchaCaptureManager removed - Advanced features coming soon
+      // this.recaptchaManager = new RecaptchaCaptureManager();
       
     } catch (error) {
       console.error('🛡️ Background: Failed to initialize capture managers:', error);
@@ -37,6 +34,7 @@ class BackgroundService {
     chrome.runtime.onMessage.addListener(this.handleMessage.bind(this));
     chrome.tabs.onUpdated.addListener(this.handleTabUpdate.bind(this));
     chrome.tabs.onRemoved.addListener(this.handleTabRemoved.bind(this));
+    chrome.tabs.onActivated.addListener(this.handleTabActivated.bind(this));
     chrome.alarms.onAlarm.addListener(this.handleAlarm.bind(this));
     
     // Add navigation listener to reset capture mode on page change
@@ -75,63 +73,6 @@ class BackgroundService {
       ["responseHeaders"]
     );
 
-    // Capture various captcha network requests with request body
-    chrome.webRequest.onBeforeRequest.addListener(
-      (details) => {
-        if (details.tabId > 0) {
-          try {
-            const url = new URL(details.url);
-            
-            // Process reCAPTCHA requests - check both hostname patterns
-            if (url.hostname.includes('google.com') || 
-                url.hostname.includes('recaptcha.net') || 
-                url.hostname.includes('gstatic.com')) {
-              
-              
-              // reCAPTCHA anchor request
-              if (/\/recaptcha\/(api2|enterprise)\/anchor/i.test(url.pathname)) {
-                this.captureRecaptchaAnchorParams(details.tabId, url, details.initiator);
-              }
-              // reCAPTCHA reload request
-              else if (/\/recaptcha\/(api2|enterprise)\/(reload|ubd)/i.test(url.pathname)) {
-                this.captureRecaptchaReloadParams(details.tabId, url, details.requestBody, details.initiator);
-              }
-              // reCAPTCHA bframe (invisible/v3)
-              else if (/\/recaptcha\/(api2|enterprise)\/bframe/i.test(url.pathname)) {
-                // For bframe, we should also capture some parameters
-                const site_key = url.searchParams.get('k');
-                if (site_key) {
-                  const params = {
-                    provider: 'reCAPTCHA',
-                    site_url: details.initiator || 'unknown',
-                    site_key: site_key,
-                    is_enterprise: url.pathname.includes('enterprise'),
-                    is_invisible: true, // bframe usually indicates invisible
-                    apiDomain: url.hostname.includes('recaptcha.net') ? 'www.recaptcha.net' : '',
-                    bframe_url: url.href,
-                    timestamp: Date.now(),
-                    tabId: details.tabId,
-                    version: 'v2', // May be v2 invisible or v3
-                    bframe_detected: true
-                  };
-                  
-                  this.storeCaptchaParams(details.tabId, params);
-                }
-              }
-            }
-          } catch (e) {
-            // Silently ignore URL parsing errors
-          }
-        }
-      },
-      { 
-        urls: [
-          "*://*.google.com/recaptcha/*",
-          "*://*.recaptcha.net/recaptcha/*"
-        ] 
-      },
-      ["requestBody"]
-    );
   }
 
   async setDefaultSettings() {
@@ -139,82 +80,136 @@ class BackgroundService {
       'enabled', 'darkMode', 'apiEnabled', 'apiUrl', 'historyLimit'
     ]);
     
+    // Batch all default settings into a single storage operation
+    const defaults = {};
+    
     if (result.enabled === undefined) {
-      await chrome.storage.sync.set({ enabled: true });
+      defaults.enabled = true;
     }
     if (result.darkMode === undefined) {
-      await chrome.storage.sync.set({ darkMode: true });
+      defaults.darkMode = true;
     }
     if (result.apiEnabled === undefined) {
-      await chrome.storage.sync.set({ apiEnabled: false });
+      defaults.apiEnabled = false;
     }
     if (result.apiUrl === undefined) {
-      await chrome.storage.sync.set({ apiUrl: '' });
+      defaults.apiUrl = '';
     }
     if (result.historyLimit === undefined) {
-      await chrome.storage.sync.set({ historyLimit: 100 });
+      defaults.historyLimit = 100;
+    }
+    
+    // Only make one storage call if there are defaults to set
+    if (Object.keys(defaults).length > 0) {
+      await chrome.storage.sync.set(defaults);
     }
   }
 
   handleMessage(request, sender, sendResponse) {
     // Handle getTabResults immediately for performance
     if (request.action === 'getTabResults') {
-      const tabData = this.detectionResults.get(request.tabId);
-      const results = tabData ? tabData.results : [];
+      console.log('🔍 BACKGROUND: getTabResults for tab', request.tabId);
+      console.log('🔍 BACKGROUND: All stored tab data:', Array.from(this.detectionResults.keys()));
       
-      // Merge with captured parameters for Advanced tab
-      const capturedParams = this.captchaParameters.get(request.tabId) || [];
-      
-      // Create a map to merge results by provider
-      const mergedMap = new Map();
-      
-      // Add detection results first
-      results.forEach(result => {
-        mergedMap.set(result.key || result.name.toLowerCase(), result);
-      });
-      
-      // Merge captured parameters into matching results
-      capturedParams.forEach(param => {
-        const paramKey = param.provider.toLowerCase().replace(/[^a-z]/g, ''); // Normalize: "reCAPTCHA" -> "recaptcha"
+      (async () => {
+        let tabData = this.detectionResults.get(request.tabId);
+        let results = tabData ? tabData.results : [];
         
-        // Try to find matching result by various keys
-        let existingResult = null;
-        for (const [key, result] of mergedMap.entries()) {
-          const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '');
-          const normalizedName = result.name ? result.name.toLowerCase().replace(/[^a-z]/g, '') : '';
-          
-          if (normalizedKey === paramKey || normalizedName === paramKey || 
-              (paramKey === 'recaptcha' && (normalizedName.includes('recaptcha') || normalizedKey.includes('recaptcha')))) {
-            existingResult = result;
-            break;
+        // If no results in memory, try to load from storage
+        if (!results || results.length === 0) {
+          console.log('🔍 BACKGROUND: No results in memory, checking storage');
+          const storageKey = `detection_${request.tabId}`;
+          const storageData = await chrome.storage.local.get(storageKey);
+          if (storageData[storageKey] && storageData[storageKey].results) {
+            results = storageData[storageKey].results;
+            // Also update memory cache
+            this.detectionResults.set(request.tabId, storageData[storageKey]);
+            console.log('🔍 BACKGROUND: Loaded results from storage:', results.length);
           }
         }
         
-        if (existingResult) {
-          // Merge parameters into existing detection
-          existingResult.advancedParameters = {
-            ...param,
-            network_captured: true
-          };
-        } else {
-          // Add as new result if not detected via DOM
-          mergedMap.set(paramKey, {
-            name: param.provider,
-            key: paramKey,
-            confidence: 100,
-            icon: paramKey + '.png',
-            advancedParameters: {
+        console.log('🔍 BACKGROUND: Basic detection results:', results);
+        console.log('🔍 BACKGROUND: Results count:', results.length);
+        
+        // Get advanced results from content script
+        const advancedData = this.advancedResults.get(request.tabId);
+        const advancedResults = advancedData ? advancedData.results : [];
+        console.log('🔍 BACKGROUND: Advanced results from storage:', advancedResults);
+        
+        // Don't merge automatic captures - only show manual captures
+        const capturedParams = []; // Empty - we don't send automatic captures
+        
+        // Create a map to merge results by provider
+        const mergedMap = new Map();
+        
+        // Add detection results first
+        results.forEach(result => {
+          mergedMap.set(result.key || result.name.toLowerCase(), result);
+        });
+        
+        // Merge advanced results from content script
+        advancedResults.forEach(advResult => {
+          const resultKey = advResult.key || advResult.name.toLowerCase();
+          let existingResult = mergedMap.get(resultKey);
+          
+          if (existingResult) {
+            // Merge advanced parameters from content script
+            existingResult.advancedParameters = {
+              ...existingResult.advancedParameters,
+              ...advResult.advancedParameters,
+              trigger: advResult.trigger || 'automatic'
+            };
+          } else {
+            // Add new result with advanced parameters
+            mergedMap.set(resultKey, advResult);
+          }
+        });
+        
+        // Merge captured parameters into matching results
+        capturedParams.forEach(param => {
+          const paramKey = param.provider.toLowerCase().replace(/[^a-z]/g, ''); // Normalize: "reCAPTCHA" -> "recaptcha"
+          
+          // Try to find matching result by various keys
+          let existingResult = null;
+          for (const [key, result] of mergedMap.entries()) {
+            const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '');
+            const normalizedName = result.name ? result.name.toLowerCase().replace(/[^a-z]/g, '') : '';
+            
+            if (normalizedKey === paramKey || normalizedName === paramKey || 
+                (paramKey === 'recaptcha' && (normalizedName.includes('recaptcha') || normalizedKey.includes('recaptcha')))) {
+              existingResult = result;
+              break;
+            }
+          }
+          
+          if (existingResult) {
+            // Merge parameters into existing detection
+            existingResult.advancedParameters = {
+              ...existingResult.advancedParameters,
               ...param,
               network_captured: true
-            }
-          });
-        }
-      });
-      
-      const mergedResults = Array.from(mergedMap.values());
-      
-      sendResponse({ results: mergedResults });
-      return false; // Synchronous response
+            };
+          } else {
+            // Add as new result if not detected via DOM
+            mergedMap.set(paramKey, {
+              name: param.provider,
+              key: paramKey,
+              confidence: 100,
+              icon: paramKey + '.png',
+              advancedParameters: {
+                ...param,
+                network_captured: true
+              }
+            });
+          }
+        });
+        
+        const mergedResults = Array.from(mergedMap.values());
+        console.log('🔍 BACKGROUND: Final merged results:', mergedResults);
+        
+        sendResponse({ results: mergedResults });
+      })();
+      return true; // Will respond asynchronously
     }
     
     switch (request.action) {
@@ -251,6 +246,10 @@ class BackgroundService {
         }
         
       case 'detectionResults':
+        console.log('🔍 BACKGROUND: Received detectionResults from content script');
+        console.log('🔍 BACKGROUND: Tab ID:', sender.tab.id);
+        console.log('🔍 BACKGROUND: Results:', request.results);
+        console.log('🔍 BACKGROUND: Results count:', request.results ? request.results.length : 0);
         // Check if URL is blacklisted before processing
         if (this.isUrlBlacklisted(request.url)) {
           sendResponse({ success: false, blacklisted: true });
@@ -289,9 +288,9 @@ class BackgroundService {
         return false;
         
       case 'getAdvancedResults':
-        // Combine both DOM-based advanced results and network-captured parameters
+        // Don't send automatic captures - only manual capture mode results
         const advancedData = this.advancedResults.get(request.tabId);
-        const capturedParams = this.captchaParameters.get(request.tabId) || [];
+        const capturedParams = []; // Empty - we don't send automatic captures
         
         // Convert captured parameters to the format expected by the popup
         const networkResults = capturedParams.map(param => ({
@@ -315,21 +314,69 @@ class BackgroundService {
         return false;
         
       case 'startCaptureMode':
+        console.log('🎯 Starting capture mode for tab', request.tabId, 'with targets:', request.targets);
+        
+        // Clear any existing data for this tab before starting new capture
+        // this.recaptchaManager.clearTabData(request.tabId); // Coming soon
+        
+        // Set capture mode with timeout and domain tracking
+        const captureWindowMs = 15000; // 15 seconds capture window
         this.captureMode.set(request.tabId, {
           active: true,
-          targets: request.targets || []
+          targets: request.targets || [],
+          startTime: Date.now(),
+          endTime: Date.now() + captureWindowMs,
+          domain: sender.tab.url || '' // Store the domain where capture started
         });
-        // Clear previous captures for this tab
+        
+        // Clear previous captures for this tab when starting new capture session
         this.capturedParams.set(request.tabId, []);
+        
+        // Show notification that capture mode is active
+        chrome.notifications.create(`capture-${request.tabId}`, {
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+          title: 'ShieldEye Capture Mode Active',
+          message: 'Refresh the page now (F5) to capture reCAPTCHA parameters. Auto-stops in 15 seconds.',
+          priority: 2,
+          requireInteraction: false
+        });
+        
+        // Set timer to auto-stop capture mode
+        setTimeout(() => {
+          const captureConfig = this.captureMode.get(request.tabId);
+          if (captureConfig && captureConfig.active) {
+            this.captureMode.delete(request.tabId);
+            console.log('🎯 Auto-stopping capture mode for tab', request.tabId, 'after timeout');
+            
+            // Check if we captured anything
+            const captures = this.capturedParams.get(request.tabId) || [];
+            if (captures.length === 0) {
+              chrome.notifications.create(`capture-timeout-${request.tabId}`, {
+                type: 'basic',
+                iconUrl: chrome.runtime.getURL('icons/icon128.png'),
+                title: 'Capture Mode Timed Out',
+                message: 'No reCAPTCHA detected. Try refreshing the page faster next time.',
+                priority: 1
+              });
+            }
+          }
+        }, captureWindowMs);
+        
+        console.log('🎯 Capture mode set for tab', request.tabId, 'with', captureWindowMs/1000, 'second window');
         sendResponse({ success: true });
         return false;
         
       case 'stopCaptureMode':
         if (request.tabId) {
           this.captureMode.delete(request.tabId);
+          // Clear RecaptchaCaptureManager's internal storage for this tab
+          // this.recaptchaManager.clearTabData(request.tabId); // Coming soon
         } else {
           // Stop for all tabs
           this.captureMode.clear();
+          // Clear all RecaptchaCaptureManager's internal storage
+          // this.recaptchaManager.clearAllData(); // Coming soon
         }
         sendResponse({ success: true });
         return false;
@@ -341,14 +388,22 @@ class BackgroundService {
         
       case 'getCapturedParameters':
         const captures = this.capturedParams.get(request.tabId) || [];
+        console.log('🎯 getCapturedParameters for tab', request.tabId, '- returning captures:', captures);
         sendResponse({ captures });
         return false;
         
       case 'clearCaptures':
         if (request.tabId) {
+          // Clear all capture-related data for the tab
           this.capturedParams.set(request.tabId, []);
+          this.captchaParameters.delete(request.tabId);
+          this.advancedResults.delete(request.tabId);
+          console.log('🗑️ Cleared all captures for tab', request.tabId);
         } else {
+          // Clear all
           this.capturedParams.clear();
+          this.captchaParameters.clear();
+          this.advancedResults.clear();
         }
         sendResponse({ success: true });
         return false;
@@ -360,6 +415,8 @@ class BackgroundService {
         return false;
         
       case 'advancedResults':
+        console.log('📥 BACKGROUND: Received advancedResults from tab', sender.tab.id);
+        console.log('📥 BACKGROUND: Advanced results:', request.results);
         this.storeAdvancedResults(sender.tab.id, request.results, request.url);
         sendResponse({ success: true });
         return false;
@@ -396,7 +453,7 @@ class BackgroundService {
         this.detectorsCache = null;
         this.detectorsCacheTime = 0;
         // Also clear from storage to force full reload
-        chrome.storage.local.remove(['detectorsCache', 'detectorsCacheTime']).then(() => {
+        chrome.storage.local.remove(['detectors', 'detectorsTime', 'detectorsCache', 'detectorsCacheTime']).then(() => {
           return this.loadDetectorsOnce();
         }).then(() => {
           sendResponse({ success: true });
@@ -432,13 +489,37 @@ class BackgroundService {
     }
   }
 
-  handleTabRemoved(tabId) {
+  async handleTabRemoved(tabId) {
     this.clearResultsForTab(tabId);
     this.headersCache.delete(tabId);
     this.captchaParameters.delete(tabId);
     this.captureMode.delete(tabId); // Clear capture mode
     this.capturedParams.delete(tabId); // Clear captured params
     this.contentScriptReady.delete(tabId); // Clear ready state
+    // this.recaptchaManager.clearTabData(tabId); // Clear RecaptchaCaptureManager data - Coming soon
+    
+    // Also clean up storage for this tab
+    try {
+      const storageKey = `detection_${tabId}`;
+      await chrome.storage.local.remove([storageKey]);
+      console.log('🔍 BACKGROUND: Cleaned up storage for tab', tabId);
+    } catch (error) {
+      console.error('🔍 BACKGROUND: Failed to clean storage for tab', tabId, error);
+    }
+  }
+  
+  handleTabActivated(activeInfo) {
+    // When user switches tabs, stop capture mode on the previous tab
+    // This prevents capture mode from staying active on background tabs
+    const { tabId } = activeInfo;
+    
+    // Get all tabs with active capture mode
+    for (const [captureTabId, captureConfig] of this.captureMode.entries()) {
+      if (captureTabId !== tabId && captureConfig.active) {
+        console.log('🎯 Stopping capture mode on tab', captureTabId, 'due to tab switch');
+        this.captureMode.delete(captureTabId);
+      }
+    }
   }
   
   handleNavigation(details) {
@@ -446,38 +527,82 @@ class BackgroundService {
     if (details.frameId === 0) {
       const tabId = details.tabId;
       
-      // Reset capture mode for this tab
-      if (this.captureMode.has(tabId)) {
-        this.captureMode.delete(tabId);
+      // Check if capture mode is active for this tab
+      const captureMode = this.captureMode.get(tabId);
+      
+      // Check if we're navigating to a different domain
+      let isDomainChange = false;
+      if (captureMode && captureMode.domain && details.url) {
+        try {
+          const currentDomain = new URL(details.url).hostname;
+          const captureDomain = new URL(captureMode.domain).hostname;
+          isDomainChange = currentDomain !== captureDomain;
+          
+          if (isDomainChange) {
+            console.log('🎯 Domain changed from', captureDomain, 'to', currentDomain, '- stopping capture mode');
+          }
+        } catch (e) {
+          // If URL parsing fails, assume domain changed to be safe
+          isDomainChange = true;
+        }
       }
       
-      // Clear captured parameters for this tab
-      if (this.capturedParams.has(tabId)) {
-        this.capturedParams.delete(tabId);
+      if (captureMode && captureMode.active && !isDomainChange) {
+        // Keep capture mode active through navigation/refresh on same domain
+        // This allows capturing parameters when the page reloads to trigger captcha
+        console.log('🎯 Keeping capture mode active for tab', tabId, 'during same-domain navigation');
+        
+        // Don't clear capturedParams - we want to accumulate captures
+        // User must manually stop capture or close tab to clear
+      } else {
+        // Domain changed or normal navigation - clear capture-related data
+        if (isDomainChange || !captureMode || !captureMode.active) {
+          console.log('🎯 Clearing capture data for tab', tabId, isDomainChange ? 'due to domain change' : 'normal navigation');
+          
+          // Stop capture mode if domain changed
+          if (isDomainChange) {
+            this.captureMode.delete(tabId);
+          }
+          
+          // Clear captured params
+          if (this.capturedParams.has(tabId)) {
+            this.capturedParams.delete(tabId);
+          }
+          
+          // Clear RecaptchaCaptureManager internal data
+          // this.recaptchaManager.clearTabData(tabId); // Coming soon
+          
+          // Clear advanced results
+          if (this.advancedResults.has(tabId)) {
+            this.advancedResults.delete(tabId);
+          }
+        }
       }
       
-      // Also clear normal captcha parameters
+      // Always clear normal captcha parameters on navigation
       if (this.captchaParameters.has(tabId)) {
         this.captchaParameters.delete(tabId);
       }
       
-      // Clear modular manager data for this tab
-      if (this.recaptchaManager) {
-        // Clear any stored anchor data that might be tab-specific
-        this.recaptchaManager.anchorData.clear();
-      }
+      // Clear modular manager data for this tab ONLY if not in capture mode or domain changed
+      // Coming soon - RecaptchaCaptureManager integration
+      // if (this.recaptchaManager && (isDomainChange || !(captureMode && captureMode.active))) {
+      //   this.recaptchaManager.clearTabData(tabId);
+      // }
     }
   }
 
-  storeResults(tabId, results, url) {
+  async storeResults(tabId, results, url) {
     // Store results using tabId + URL combination for per-URL detection
     const key = `${tabId}:${url}`;
-    this.detectionResults.set(key, {
+    const detectionData = {
       results,
       url,
       timestamp: Date.now(),
       tabId
-    });
+    };
+    
+    this.detectionResults.set(key, detectionData);
     
     // Also maintain a reference by tabId for easy lookup
     this.detectionResults.set(tabId, {
@@ -485,6 +610,21 @@ class BackgroundService {
       url,
       timestamp: Date.now()
     });
+    
+    // Store in chrome.storage.local for persistence
+    try {
+      const storageKey = `detection_${tabId}`;
+      await chrome.storage.local.set({
+        [storageKey]: {
+          results,
+          url,
+          timestamp: Date.now()
+        }
+      });
+      console.log('🔍 BACKGROUND: Stored detection results in storage for tab', tabId);
+    } catch (error) {
+      console.error('🔍 BACKGROUND: Failed to store results in storage:', error);
+    }
   }
 
   storeAdvancedResults(tabId, results, url) {
@@ -707,177 +847,6 @@ class BackgroundService {
     return Math.round(sum / detections.length);
   }
 
-  // Capture reCAPTCHA anchor parameters using modular manager
-  captureRecaptchaAnchorParams(tabId, url, initiator) {
-    const site_key = url.searchParams.get('k');
-    const size = url.searchParams.get('size') || 'normal';
-    const s = url.searchParams.get('s');
-    
-    // Extract site URL from co parameter
-    let site_url = initiator || 'unknown';
-    const co = url.searchParams.get('co');
-    if (co) {
-      try {
-        site_url = atob(co.replace(/\./g, '=')).replace(':443', '');
-      } catch (e) {
-      }
-    }
-
-    const params = {
-      provider: 'reCAPTCHA',
-      site_url: site_url,
-      site_key: site_key || '',
-      is_enterprise: url.pathname.includes('enterprise'),
-      is_invisible: size === 'invisible',
-      is_s_required: s != null,
-      apiDomain: url.hostname.includes('recaptcha.net') ? 'www.recaptcha.net' : '',
-      anchor_url: url.href,
-      timestamp: Date.now(),
-      tabId: tabId // Include tab ID for proper tracking
-    };
-
-    // Store by site_key for reload matching using modular manager
-    this.recaptchaManager.anchorData.set(site_key, params);
-    
-    // Also store immediately for cases where reload doesn't happen
-    // This ensures anchor-only reCAPTCHA implementations are captured
-    this.storeCaptchaParams(tabId, {
-      ...params,
-      version: 'v2', // Default to v2, will be updated if reload happens
-      anchor_only: true // Mark as anchor-only detection
-    });
-    
-  }
-
-  // Capture reCAPTCHA reload parameters using modular manager
-  captureRecaptchaReloadParams(tabId, url, requestBody, initiator) {
-    const site_key = url.searchParams.get('k');
-    
-    if (!site_key || !this.recaptchaManager.anchorData.has(site_key)) {
-      return;
-    }
-
-    const anchorData = this.recaptchaManager.anchorData.get(site_key);
-    
-    // Default values
-    let action = '';
-    let isInvisibleFromMessage = false;
-    
-    // Try to parse the request body if it exists
-    if (requestBody && requestBody.raw && requestBody.raw.length > 0) {
-      try {
-        // Note: In real implementation, we'd need protobuf parsing
-        // For now, we'll use simpler detection
-        const bodyStr = String.fromCharCode.apply(null, new Uint8Array(requestBody.raw[0].bytes));
-        
-        // Check for V3 indicators
-        if (bodyStr.includes('action') || url.pathname.includes('reload')) {
-          // This is likely V3 if we find action-related content
-          action = 'homepage'; // Default action, would need proper parsing
-        }
-      } catch (e) {
-      }
-    }
-    
-    // Determine captcha type
-    const isReCaptchaV3 = action.length > 0;
-    const isInvisible = !isReCaptchaV3 && anchorData.is_invisible;
-    const recaptchaV2Normal = !anchorData.is_invisible && !isReCaptchaV3;
-    
-    // Create final parameters
-    const finalParams = {
-      ...anchorData,
-      action: action,
-      isReCaptchaV3: isReCaptchaV3,
-      isInvisible: isInvisible,
-      recaptchaV2Normal: recaptchaV2Normal,
-      reload_detected: true,
-      anchor_only: false, // Update to indicate reload happened
-      version: isReCaptchaV3 ? 'v3' : 'v2' // Update version based on detection
-    };
-    
-    // Check if capture mode is active for this tab
-    const captureConfig = this.captureMode.get(tabId);
-    if (captureConfig && captureConfig.active) {
-      // Store to captured params instead of regular storage
-      const captures = this.capturedParams.get(tabId) || [];
-      captures.push(finalParams);
-      this.capturedParams.set(tabId, captures);
-    } else {
-      // Update existing anchor-only params if they exist
-      let currentParams = this.captchaParameters.get(tabId) || [];
-      const existingIndex = currentParams.findIndex(p => 
-        p.provider === 'reCAPTCHA' && p.site_key === site_key
-      );
-      
-      if (existingIndex !== -1) {
-        // Update existing anchor-only params with reload data
-        currentParams[existingIndex] = finalParams;
-      } else {
-        // Store new params if anchor wasn't captured
-        currentParams.push(finalParams);
-      }
-      
-      this.captchaParameters.set(tabId, currentParams);
-    }
-    
-    this.recaptchaManager.anchorData.delete(site_key); // Clean up after processing
-  }
-
-
-  // Store captured parameters
-  storeCaptchaParams(tabId, params) {
-    
-    // Check if capture mode is active for this tab
-    const captureConfig = this.captureMode.get(tabId);
-    if (captureConfig && captureConfig.active) {
-      // Store in capturedParams for capture mode
-      const captures = this.capturedParams.get(tabId) || [];
-      
-      // Format the capture for display in Advanced tab
-      const formattedCapture = {
-        name: 'reCAPTCHA',
-        captcha_type: params.provider || 'reCAPTCHA',
-        advancedParameters: {
-          site_url: params.site_url,
-          sitekey: params.site_key,
-          site_key: params.site_key,
-          action: params.action || '',
-          is_invisible: params.is_invisible,
-          isInvisible: params.is_invisible,
-          recaptchaV2Normal: !params.is_invisible && params.version === 'v2',
-          isReCaptchaV3: params.version === 'v3',
-          is_enterprise: params.is_enterprise,
-          s: params.is_s_required ? 'yes' : '',
-          apiDomain: params.apiDomain || '',
-          timestamp: params.timestamp || Date.now()
-        }
-      };
-      
-      captures.push(formattedCapture);
-      this.capturedParams.set(tabId, captures);
-    } else {
-      // Normal storage when not in capture mode
-      let currentParams = this.captchaParameters.get(tabId) || [];
-      
-      // Check if we already have this captcha (by site_key)
-      const existingIndex = currentParams.findIndex(p => {
-        return p.site_key === params.site_key && p.provider === params.provider;
-      });
-      
-      if (existingIndex >= 0) {
-        // Update existing entry
-        currentParams[existingIndex] = { ...currentParams[existingIndex], ...params };
-      } else {
-        // Add new entry
-        currentParams.push(params);
-      }
-      
-      this.captchaParameters.set(tabId, currentParams);
-    }
-    
-  }
-
   async loadBlacklist() {
     const result = await chrome.storage.sync.get(['blacklist']);
     this.blacklist = result.blacklist || [];
@@ -950,19 +919,26 @@ class BackgroundService {
   
   async loadDetectorsOnce() {
     try {
+      // IMPORTANT: Data flow for detectors
+      // 1. First load: Read from JSON files → Store in chrome.storage.local
+      // 2. All subsequent usage: Read from chrome.storage.local only
+      // 3. Colors are defined in each detector's JSON file
+      // 4. All detector data (including colors) comes from storage
       
       // Load base detectors first, then merge custom rules
       
       // Check cached detectors from Chrome storage
-      const cached = await chrome.storage.local.get(['detectorsCache', 'detectorsCacheTime']);
+      // Using 'detectors' as the single source of truth for all detector data
+      const cached = await chrome.storage.local.get(['detectors', 'detectorsTime']);
       const now = Date.now();
-      const isCacheValid = cached.detectorsCache && 
-                          cached.detectorsCacheTime && 
-                          (now - cached.detectorsCacheTime) < this.CACHE_DURATION;
+      const isCacheValid = cached.detectors && 
+                          cached.detectorsTime && 
+                          (now - cached.detectorsTime) < this.CACHE_DURATION;
       
       if (isCacheValid) {
-        this.detectorsCache = cached.detectorsCache;
-        this.detectorsCacheTime = cached.detectorsCacheTime;
+        // Wrap the detectors object back into the expected format
+        this.detectorsCache = { detectors: cached.detectors };
+        this.detectorsCacheTime = cached.detectorsTime;
         return;
       }
       
@@ -1006,7 +982,7 @@ class BackgroundService {
                   confidence: detector.confidence || 100,
                   website: detector.website,
                   icon: detector.icon || 'custom.png',
-                  color: detector.color || this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category),
+                  color: detector.color || this.getCategoryColor(detector.category),
                   lastUpdated: detector.lastUpdated,
                   version: detector.version,
                   detection: detector.detection || {}
@@ -1034,14 +1010,14 @@ class BackgroundService {
             cloudflare: { 
               name: "Cloudflare", 
               category: "Anti-Bot", 
-              color: this.getDetectorColor("Cloudflare") || this.getCategoryColor("Anti-Bot"),
+              color: "#F48120", // Cloudflare color from JSON
               icon: "cloudflare.png",
               detection: {} 
             },
             recaptcha: { 
               name: "reCAPTCHA", 
               category: "CAPTCHA", 
-              color: this.getDetectorColor("reCAPTCHA") || this.getCategoryColor("CAPTCHA"),
+              color: "#4285F4", // reCAPTCHA color from JSON
               icon: "recaptcha.png",
               detection: {} 
             }
@@ -1052,7 +1028,8 @@ class BackgroundService {
       // Ensure all detectors have colors (detector-specific first, then category)
       for (const [key, detector] of Object.entries(detectorsData.detectors)) {
         if (!detector.color) {
-          detector.color = this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category) || '#6b7280';
+          // Use color from JSON or fallback to category color
+          detector.color = detector.color || this.getCategoryColor(detector.category) || '#6b7280';
         }
       }
       
@@ -1142,11 +1119,16 @@ class BackgroundService {
       this.detectorsCacheTime = now;
       
       // Store in chrome.storage.local for persistence
+      // Use 'detectors' as the main key for consistency across all components
       await chrome.storage.local.set({
+        detectors: detectorsData.detectors, // Store just the detectors object (the actual detector definitions)
+        detectorsTime: now,
+        // Keep old keys for backward compatibility temporarily
         detectorsCache: detectorsData,
         detectorsCacheTime: now
       });
       
+      console.log('📦 Stored detectors in storage:', Object.keys(detectorsData.detectors || {}).length, 'detectors');
       
     } catch (error) {
       console.error('🛡️ Background: Error loading detectors:', error);
@@ -1154,75 +1136,30 @@ class BackgroundService {
   }
   
   getCategoryColor(category) {
+    // Consistent colors across all extension files
     const categoryColors = {
       'CAPTCHA': '#dc2626',           // Red
-      'Anti-Bot': '#ea580c',          // Orange  
+      'Anti-Bot': '#ea580c',          // Orange
+      'Bot Detection': '#ea580c',     // Orange
       'WAF': '#2563eb',               // Blue
       'CDN': '#059669',               // Green
-      'Fingerprinting': '#7c3aed',    // Purple
-      'Security': '#0891b2',          // Cyan
-      'Analytics': '#ca8a04',         // Yellow
-      'Marketing': '#ec4899'          // Pink
+      'Fingerprinting': '#f59e0b',    // Amber (consistent)
+      'Security': '#10b981',          // Emerald (consistent)
+      'Analytics': '#8b5cf6',         // Violet (consistent)
+      'Marketing': '#ec4899',         // Pink
+      'Protection': '#7c3aed',        // Purple
+      'DDoS': '#b91c1c'              // Dark Red
     };
     return categoryColors[category] || '#6b7280'; // Gray default
   }
 
-  getDetectorColor(detectorName) {
-    // Unique color for each specific detector/provider
-    const detectorColors = {
-      // Anti-Bot Solutions
-      'akamai': '#FF6B35',
-      'cloudflare': '#F48120',
-      'datadome': '#22C55E',        // Green
-      'imperva': '#00BCD4',
-      'incapsula': '#00ACC1',
-      'perimeterx': '#DC2626',      // Red
-      'reblaze': '#E91E63',
-      'sucuri': '#8BC34A',
-      'aws': '#FF9900',
-      'f5': '#E53935',
-      'kasada': '#3F51B5',
-      'radware': '#009688',
-      
-      // CAPTCHA Solutions
-      'recaptcha': '#4285F4',
-      'hcaptcha': '#0074BF',
-      'funcaptcha': '#9C27B0',
-      'geetest': '#5E35B1',
-      'friendly captcha': '#22C55E',
-      'mtcaptcha': '#FF5722',
-      
-      // WAF Solutions  
-      'akamai waf': '#D32F2F',
-      'cloudflare waf': '#FF6F00',
-      'aws waf': '#FF8F00',
-      'azure waf': '#0078D4',
-      'barracuda': '#00695C',
-      'fortinet': '#EE0000',
-      
-      // Default
-      'custom': '#9E9E9E'
-    };
-    
-    const normalizedName = detectorName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    
-    if (detectorColors[normalizedName]) {
-      return detectorColors[normalizedName];
-    }
-    
-    for (const [key, color] of Object.entries(detectorColors)) {
-      if (normalizedName.includes(key) || key.includes(normalizedName)) {
-        return color;
-      }
-    }
-    
-    return null;
-  }
+  // Colors are now loaded from detector JSON files and stored in storage
+  // No hardcoded colors needed
   
   async refreshDetectorsCache() {
     // Clear cache timestamps to force reload
     this.detectorsCacheTime = 0;
-    await chrome.storage.local.remove(['detectorsCacheTime']);
+    await chrome.storage.local.remove(['detectorsTime', 'detectorsCacheTime']);
     // Reload detectors
     await this.loadDetectorsOnce();
   }

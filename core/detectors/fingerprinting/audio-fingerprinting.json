@@ -2,13 +2,13 @@
   "id": "audio-fingerprinting",
   "name": "Audio Fingerprinting",
   "category": "Fingerprinting",
+  "color": "#7c3aed",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://webaudio.github.io/web-audio-api/",
   "icon": "custom.png",
   "description": "Web Audio API-based device and system fingerprinting",
-  "tags": ["webaudio", "audio", "hardware-fingerprinting", "dsp"],
   "detection": {
     "scripts": [
       {

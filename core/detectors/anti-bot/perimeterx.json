@@ -9,7 +9,6 @@
   "website": "https://www.perimeterx.com/",
   "icon": "perimeterx.png",
   "description": "Behavioral-based bot detection with real-time risk scoring",
-  "tags": ["behavioral-analysis", "real-time", "risk-scoring"],
   "detection": {
     "cookies": [
       {

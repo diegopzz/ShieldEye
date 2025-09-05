@@ -2,13 +2,13 @@
   "id": "hcaptcha",
   "name": "hCaptcha",
   "category": "CAPTCHA",
+  "color": "#0074BF",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://www.hcaptcha.com/",
   "icon": "hcaptcha.png",
   "description": "Privacy-focused CAPTCHA service that rewards websites",
-  "tags": ["privacy", "captcha", "machine-learning"],
   "detection": {
     "urls": [
       {
@@ -62,35 +62,5 @@
         "confidence": 95
       }
     ]
-  },
-  "variants": {
-    "standard": {
-      "name": "Standard hCaptcha",
-      "difficulty": "Medium"
-    },
-    "invisible": {
-      "name": "Invisible hCaptcha",
-      "difficulty": "Medium"
-    },
-    "enterprise": {
-      "name": "hCaptcha Enterprise",
-      "difficulty": "High",
-      "features": ["rqdata", "custom-challenges"]
-    }
-  },
-  "parameters": {
-    "sitekey": {
-      "required": true,
-      "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-      "location": ["data-sitekey", "data-hcaptcha-sitekey"]
-    },
-    "rqdata": {
-      "required": false,
-      "enterpriseOnly": true,
-      "description": "Enterprise request data"
-    },
-    "size": {
-      "values": ["normal", "compact", "invisible"]
-    }
   }
 }

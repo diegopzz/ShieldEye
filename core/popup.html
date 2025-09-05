@@ -305,190 +305,15 @@
       </div>
 
       <!-- Advanced Tab -->
-      <div id="advancedTab" class="tab-content" style="display: none;">
-        <div class="capture-header">
-          <h3>Captcha Parameter Capture</h3>
-          <p class="capture-subtitle">Capture captcha parameters for solving services</p>
-        </div>
-
-        <!-- Terms of Service Section -->
-        <div id="captureTermsSection" class="capture-terms-section">
-          <div class="terms-container">
-            <div class="terms-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24">
-                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" fill="#3b82f6"/>
-              </svg>
-            </div>
-            <h4>Important Information</h4>
-            <div class="terms-content">
-              <p><strong>Please read carefully before proceeding:</strong></p>
-              <div class="terms-box">
-                <h5>🎯 How to Capture Parameters</h5>
-                <p>After clicking "Start Capturing", the popup will automatically close. You must then trigger the captcha on the page:</p>
-                <ul>
-                  <li><strong>Page Load Captcha:</strong> Refresh the page (F5)</li>
-                  <li><strong>Form Submit Captcha:</strong> Submit the form that contains the captcha</li>
-                  <li><strong>Button Click Captcha:</strong> Click the button that triggers the captcha</li>
-                  <li><strong>Invisible Captcha:</strong> Perform the action that normally triggers it</li>
-                </ul>
-                
-                <h5>⚠️ Important Notes</h5>
-                <ul>
-                  <li>The capture will start immediately after clicking the button</li>
-                  <li>Parameters will be captured when the captcha loads or validates</li>
-                  <li>You can view captured data by reopening the extension</li>
-                  <li>Clear captured data before starting a new capture session</li>
-                </ul>
-                
-                <h5>📋 Supported Captcha Types</h5>
-                <p>This tool can capture parameters from: reCAPTCHA (v2/v3/Enterprise), others soon!.</p>
-              </div>
-              <div class="terms-checkbox">
-                <input type="checkbox" id="acceptTermsCheckbox">
-                <label for="acceptTermsCheckbox">I understand how to use the capture feature</label>
-              </div>
-              <button id="acceptTermsBtn" class="accept-terms-btn" disabled>
-                Continue to Capture Setup
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Capture Selection Section (Initially Hidden) -->
-        <div id="captureSelectionSection" class="capture-selection" style="display: none;">
-          <div class="help-link-container">
-            <button id="howItWorksBtn" class="how-it-works-link">
-              <svg width="16" height="16" viewBox="0 0 24 24">
-                <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" fill="currentColor"/>
-              </svg>
-              How this works?
-            </button>
-          </div>
-          <div class="detection-selector">
-            <h4>Available Detections</h4>
-            <div id="detectionCheckboxList" class="detection-checkbox-list">
-              <!-- Checkboxes will be populated here -->
-            </div>
-            <div id="noDetectionsMessage" class="no-detections-message" style="display: none;">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" opacity="0.5">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
-              </svg>
-              <p>No captchas detected on this page</p>
-            </div>
-          </div>
-          
-          <div class="capture-controls">
-            <button id="startCaptureBtn" class="capture-btn start-capture" disabled>
-              <svg width="16" height="16" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
-              </svg>
-              Start Capturing
-            </button>
-            <button id="stopCaptureBtn" class="capture-btn stop-capture" style="display: none;">
-              <svg width="16" height="16" viewBox="0 0 24 24">
-                <path d="M6 6h12v12H6z" fill="currentColor"/>
-              </svg>
-              Stop Capturing
-            </button>
-            <button id="clearCapturesBtn" class="capture-btn clear-captures">
-              <svg width="16" height="16" viewBox="0 0 24 24">
-                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" fill="currentColor"/>
-              </svg>
-              Clear All
-            </button>
-          </div>
-        </div>
-
-        <div id="captureInstructions" class="capture-instructions" style="display: none;">
-          <div class="instructions-content">
-            <svg width="24" height="24" viewBox="0 0 24 24">
-              <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="#f59e0b"/>
-            </svg>
-            <div>
-              <h4>Capture Mode Active</h4>
-              <p>Now trigger the captcha to capture its parameters:</p>
-              <ul>
-                <li>If captcha appears on page load → Refresh the page</li>
-                <li>If captcha appears on form submit → Submit the form</li>
-                <li>If captcha appears on button click → Click the button</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div id="capturedParameters" class="captured-parameters" style="display: none;">
-          <div class="captured-header">
-            <h4>Captured Parameters</h4>
-            <span id="captureCount" class="capture-count">0 captures</span>
-          </div>
-          <div class="capture-table-container">
-            <table id="captureTable" class="capture-table">
-              <thead>
-                <tr>
-                  <th>Site URL</th>
-                  <th>Site Key</th>
-                  <th>Action/Type</th>
-                  <th>V2</th>
-                  <th>V2 Invisible</th>
-                  <th>V3</th>
-                  <th>Enterprise</th>
-                  <th>S</th>
-                  <th>API Domain</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="captureTableBody">
-                <!-- Captured parameters will be shown here -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="advancedEmpty" class="empty-state advanced-disabled" style="display: none !important;">
-          <div class="advanced-coming-soon-container">
-            <div class="advanced-coming-soon-content">
-              <div class="coming-soon-icon-advanced">
-                <svg width="40" height="40" viewBox="0 0 24 24" style="opacity: 0.3;">
-                  <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,12.1 16,12.8 16,13.8V17.8C16,18.9 15.1,19.8 14,19.8H10C8.9,19.8 8,18.9 8,17.8V13.8C8,12.8 8.6,12.1 9.2,11.5V10C9.2,8.6 10.6,7 12,7Z" fill="currentColor"/>
-                </svg>
-              </div>
-              
-              <h2 class="advanced-coming-soon-title">No reCAPTCHA Detected</h2>
-              <p class="advanced-coming-soon-description">
-                Parameter capture is only available on websites that use supported CAPTCHA services.
-              </p>
-              
-              <div class="advanced-coming-soon-features">
-                <h4>To use parameter capture:</h4>
-                <div class="advanced-feature-list">
-                  <div class="feature-item">
-                    <span style="color: var(--accent); margin-right: 8px;">→</span>
-                    Visit a website with reCAPTCHA v2, v3, or Enterprise
-                  </div>
-                  <div class="feature-item">
-                    <span style="color: var(--accent); margin-right: 8px;">→</span>
-                    Return to this Advanced tab to see capture options
-                  </div>
-                  <div class="feature-item">
-                    <span style="color: var(--accent); margin-right: 8px;">→</span>
-                    Click "Start Capturing" when ready
-                  </div>
-                  <div class="feature-item">
-                    <span style="color: var(--accent); margin-right: 8px;">→</span>
-                    Trigger the CAPTCHA to capture parameters
-                  </div>
-                </div>
-              </div>
-              
-              <div class="test-sites-suggestion">
-                <h4>🧪 Try these test sites:</h4>
-                <div class="test-links">
-                  <span class="test-link">recaptcha-demo.appspot.com</span>
-                  <span class="test-link">google.com/recaptcha</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div id="advancedTab" class="tab-content">
+        <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+          <svg width="60" height="60" viewBox="0 0 24 24" style="opacity: 0.3; margin-bottom: 20px;">
+            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" fill="currentColor"/>
+          </svg>
+          <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; color: var(--text-primary);">Coming Soon</h2>
+          <p style="color: var(--text-secondary); font-size: 14px; max-width: 300px; margin: 0 auto;">
+            Advanced capture features are currently under development and will be available in a future update.
+          </p>
         </div>
       </div>
 
@@ -520,31 +345,31 @@
         <div class="instructions-content">
           <h4>🎯 Steps to Capture</h4>
           <div class="instruction-lines-simple">
-            <div class="instruction-line">After clicking "Start Capturing", the popup will automatically close</div>
-            <div class="instruction-line">You must then trigger the captcha on the page:</div>
+            <div class="instruction-line"><strong>Quick Steps:</strong></div>
             <div class="instruction-spacer"></div>
             
-            <div class="instruction-line"><span class="instruction-bullet">•</span> Page Load Captcha</div>
-            <div class="instruction-line instruction-indent">→ Refresh the page (F5)</div>
+            <div class="instruction-line"><span class="instruction-bullet">1.</span> Click "Start Capturing"</div>
+            <div class="instruction-line instruction-indent">→ The popup will close automatically</div>
             <div class="instruction-spacer"></div>
             
-            <div class="instruction-line"><span class="instruction-bullet">•</span> Form Submit Captcha</div>
-            <div class="instruction-line instruction-indent">→ Submit the form that contains the captcha</div>
+            <div class="instruction-line"><span class="instruction-bullet">2.</span> Press F5 immediately</div>
+            <div class="instruction-line instruction-indent">→ Refresh the page to trigger fresh reCAPTCHA</div>
             <div class="instruction-spacer"></div>
             
-            <div class="instruction-line"><span class="instruction-bullet">•</span> Button Click Captcha</div>
-            <div class="instruction-line instruction-indent">→ Click the button that triggers the captcha</div>
+            <div class="instruction-line"><span class="instruction-bullet">3.</span> Wait for notification</div>
+            <div class="instruction-line instruction-indent">→ You'll see a success message when captured</div>
             <div class="instruction-spacer"></div>
             
-            <div class="instruction-line"><span class="instruction-bullet">•</span> Invisible Captcha</div>
-            <div class="instruction-line instruction-indent">→ Perform the action that normally triggers it</div>
+            <div class="instruction-line"><span class="instruction-bullet">4.</span> Reopen extension</div>
+            <div class="instruction-line instruction-indent">→ View captured data in the table</div>
           </div>
           
           <h4>⚠️ Important Notes</h4>
           <div class="instruction-lines-simple">
-            <div class="instruction-line">• The capture will start immediately after clicking the button</div>
-            <div class="instruction-line">• Parameters will be captured when the captcha loads or validates</div>
-            <div class="instruction-line">• You can view captured data by reopening the extension</div>
+            <div class="instruction-line">• You have <strong>15 seconds</strong> to refresh the page after clicking Start</div>
+            <div class="instruction-line">• The popup will close to let you refresh the page</div>
+            <div class="instruction-line">• Browser notifications will show capture status</div>
+            <div class="instruction-line">• Capture mode auto-stops after 15 seconds</div>
             <div class="instruction-line">• Clear captured data before starting a new capture session</div>
           </div>
           
@@ -824,69 +649,7 @@
     </div>
   </div>
 
-  <!-- API Customization Modal -->
-  <div id="apiCustomizationModal" class="modal" style="display: none;">
-    <div class="modal-content api-custom-modal">
-      <div class="modal-header">
-        <h3>Customize API Payload</h3>
-        <button id="closeApiCustomModal" class="close-btn">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="api-template-section">
-          <div class="template-header">
-            <h4>JSON Template</h4>
-            <div class="template-actions">
-              <button id="resetTemplate" class="reset-btn">Reset to Default</button>
-              <button id="previewPayload" class="preview-btn">Preview</button>
-            </div>
-          </div>
-          
-          <div class="template-editor">
-            <textarea id="apiTemplate" class="template-textarea" placeholder="Enter your custom JSON template here..."></textarea>
-          </div>
-          
-          <div class="variables-help">
-            <h5>Available Variables:</h5>
-            <div class="variables-grid">
-              <div class="variable-item">
-                <code>&lt;WEBSITE_URL&gt;</code>
-                <span>Current page URL</span>
-              </div>
-              <div class="variable-item">
-                <code>&lt;DOMAIN&gt;</code>
-                <span>Website domain</span>
-              </div>
-              <div class="variable-item">
-                <code>&lt;DETECTIONS&gt;</code>
-                <span>Array of detected solutions</span>
-              </div>
-              <div class="variable-item">
-                <code>&lt;DETECTION_COUNT&gt;</code>
-                <span>Number of detections</span>
-              </div>
-              <div class="variable-item">
-                <code>&lt;TIMESTAMP&gt;</code>
-                <span>Current timestamp</span>
-              </div>
-              <div class="variable-item">
-                <code>&lt;USER_AGENT&gt;</code>
-                <span>Browser user agent</span>
-              </div>
-            </div>
-          </div>
-          
-          <div id="templatePreview" class="template-preview" style="display: none;">
-            <h5>Preview Output:</h5>
-            <pre id="previewContent"></pre>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="cancelApiCustom" class="cancel-btn">Cancel</button>
-        <button id="saveApiTemplate" class="save-btn">Save Template</button>
-      </div>
-    </div>
-  </div>
+  <!-- API Customization Modal - Removed (unused functionality) -->
 
   <!-- Confirmation Modal -->
   <div id="confirmModal" class="modal" style="display: none;">
@@ -904,8 +667,6 @@
     </div>
   </div>
 
-  <script src="scripts/pbf.js"></script>
-  <script src="scripts/message.browser.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

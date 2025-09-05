@@ -2,13 +2,13 @@
   "id": "sucuri",
   "name": "Sucuri WAF",
   "category": "Anti-Bot",
+  "color": "#8BC34A",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://sucuri.net/",
   "icon": "sucuri.png",
   "description": "Sucuri Website Security Platform with WAF and bot protection",
-  "tags": ["waf", "bot-protection", "ddos-protection", "website-security", "cloud-waf"],
   "detection": {
     "cookies": [
       {
@@ -65,22 +65,6 @@
         "confidence": 85,
         "description": "Sucuri meta tags"
       }
-    ]
-  },
-  "mitigation": {
-    "difficulty": "High",
-    "techniques": [
-      "Blacklist/whitelist rules",
-      "Geographic blocking",
-      "Advanced bot detection",
-      "DDoS protection",
-      "Virtual patching",
-      "Zero-day protection"
-    ],
-    "bypass_methods": [
-      "Clean residential IPs",
-      "Human-like behavior patterns",
-      "Request rate limiting"
     ]
   }
 }

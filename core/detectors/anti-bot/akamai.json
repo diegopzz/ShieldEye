@@ -9,7 +9,6 @@
   "website": "https://www.akamai.com/products/bot-manager",
   "icon": "akamai.png",
   "description": "Enterprise-grade bot management solution providing real-time detection and mitigation",
-  "tags": ["enterprise", "cdn", "bot-management"],
   "detection": {
     "cookies": [
       {
@@ -38,8 +37,7 @@
         "description": "Machine identification"
       }
     ],
-    "headers": [
-    ],
+    "headers": [],
     "urls": [
       {
         "pattern": "/akam/",

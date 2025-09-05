@@ -2,13 +2,13 @@
   "id": "geetest",
   "name": "GeeTest",
   "category": "CAPTCHA",
+  "color": "#5E35B1",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://www.geetest.com/",
   "icon": "geetest.png",
   "description": "AI-powered behavioral CAPTCHA with slide verification",
-  "tags": ["behavioral", "ai-powered", "slide-verification"],
   "detection": {
     "cookies": [
       {

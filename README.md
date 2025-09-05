@@ -10,6 +10,31 @@
   [![Security](https://img.shields.io/badge/security-policy-red.svg)](docs/docs/SECURITY.md)
 </div>
 
+## 📸 Screenshots
+
+  <table>
+    <tr>
+      <td width="50%">
+        <h3 align="center">Detection Overview</h3>
+      <img width="456" height="400" alt="image" src="https://github.com/user-attachments/assets/ccefd4dd-c7de-4182-9e14-2bbe7b167f62" />
+      </td>
+            <td width="50%">
+        <h3 align="center">Advanced</h3>
+   <img width="456" height="400" alt="image" src="https://github.com/user-attachments/assets/c99317ea-a1bb-4768-9cbc-4175218d0e58" />
+      </td>
+    </tr>
+    <tr>
+      <td width="50%">
+        <h3 align="center">History Tracking</h3>
+   <img width="456" height="400" alt="image" src="https://github.com/user-attachments/assets/373f4fe5-d85a-4ae5-837b-1a14821ef872" />
+      </td>
+      <td width="50%">
+        <h3 align="center">Rules Management</h3>
+        <img width="456" height="400" alt="image" src="https://github.com/user-attachments/assets/7423fdf7-4d33-4020-8120-7480111b41a5" />
+      </td>
+    </tr>
+  </table>
+
 ## 🎯 Overview
 
 ShieldEye is an open-source browser extension that detects and analyzes anti-bot solutions, CAPTCHA services, and security mechanisms on websites. Similar to Wappalyzer but specialized for security detection, ShieldEye helps developers, security researchers, and automation specialists understand the protection layers implemented on web applications.
@@ -43,17 +68,13 @@ ShieldEye is an open-source browser extension that detects and analyzes anti-bot
 For detailed installation instructions, see [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 **Quick Setup:**
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/diegopzz/shieldeye.git
-   cd shieldeye/ShieldEye
-   ```
+1. Download https://github.com/diegopzz/ShieldEye/releases/tag/RELEASE
 
 2. **Load in Chrome/Edge:**
    - Navigate to `chrome://extensions/` or `edge://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked"
-   - Select the `ShieldEye` folder
+      Navigate to and select the `ShieldEye` folder from the downloaded repository, then select Core folder
 
 3. **Start detecting:**
    - Click the ShieldEye icon in your toolbar
@@ -186,7 +207,7 @@ We welcome contributions! Here's how to help:
 
 ## 📊 Supported Services
 
-### Currently Detected (35+)
+### Currently Detected (16+)
 
 **Anti-Bot**: Akamai, Cloudflare, DataDome, PerimeterX, Incapsula, Reblaze, F5
 
@@ -205,8 +226,6 @@ We welcome contributions! Here's how to help:
 ## 📚 Resources
 
 - [Installation Guide](docs/INSTALLATION.md)
-- [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
-- [Web Security Detection Techniques](https://github.com/diegopzz/shieldeye/wiki)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Security Policy](docs/SECURITY.md)
 
@@ -223,9 +242,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📧 Support
 
 - **Issues**: [GitHub Issues](https://github.com/diegopzz/shieldeye/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions)
 - **Security**: [Security Policy](docs/SECURITY.md)
-- **Wiki**: [Documentation](https://github.com/diegopzz/shieldeye/wiki)
 
 ---
 

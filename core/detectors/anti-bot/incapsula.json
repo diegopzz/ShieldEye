@@ -2,13 +2,13 @@
   "id": "incapsula",
   "name": "Incapsula (Imperva)",
   "category": "Anti-Bot",
+  "color": "#00ACC1",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://www.imperva.com/products/web-application-firewall-waf/",
   "icon": "imperva.png",
   "description": "Web application firewall with advanced bot protection",
-  "tags": ["waf", "ddos-protection", "bot-mitigation"],
   "detection": {
     "cookies": [
       {
@@ -27,9 +27,7 @@
         "description": "Load balancer identifier"
       }
     ],
-    "headers": [
-
-    ],
+    "headers": [],
     "urls": [
       {
         "pattern": "incapsula.com",

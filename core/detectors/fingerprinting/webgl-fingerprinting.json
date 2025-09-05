@@ -2,13 +2,13 @@
   "id": "webgl-fingerprinting",
   "name": "WebGL Fingerprinting",
   "category": "Fingerprinting",
+  "color": "#7c3aed",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://en.wikipedia.org/wiki/WebGL",
   "icon": "custom.png",
   "description": "WebGL-based graphics hardware and driver fingerprinting",
-  "tags": ["webgl", "graphics", "hardware-fingerprinting", "gpu"],
   "detection": {
     "scripts": [
       {

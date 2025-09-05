@@ -2,13 +2,13 @@
   "id": "f5",
   "name": "F5 BIG-IP ASM",
   "category": "Anti-Bot",
+  "color": "#E53935",
   "confidence": 100,
   "lastUpdated": "2024-01-15",
   "version": "1.0.0",
   "website": "https://www.f5.com/",
   "icon": "f5.png",
   "description": "F5 BIG-IP Application Security Manager (ASM) - Web application firewall and bot protection",
-  "tags": ["waf", "bot-protection", "ddos", "application-security"],
   "detection": {
     "cookies": [
       {
@@ -17,33 +17,9 @@
         "description": "F5 BIG-IP session cookies"
       }
     ],
-    "headers": [
-    
-    ],
-    "urls": [
-     
-    ],
-    "scripts": [
-     
-    ]
-    
-  },
-  "mitigation": {
-    "difficulty": "High",
-    "techniques": [
-      "Rate limiting",
-      "IP reputation",
-      "JavaScript challenges",
-      "Device fingerprinting",
-      "Behavioral analysis",
-      "SSL/TLS fingerprinting"
-    ],
-    "bypass_methods": [
-      "Residential proxies",
-      "Browser automation with stealth",
-      "Session rotation",
-      "Request throttling"
-    ]
+    "headers": [],
+    "urls": [],
+    "scripts": []
   },
   "notes": {
     "detection_tips": [

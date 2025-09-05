@@ -11,6 +11,10 @@ class AntiBotDetector {
     this.interactionMonitors = [];
     this.currentUrl = window.location.href;
     
+    // Track resources for cleanup
+    this.eventListeners = [];
+    this.intervals = [];
+    this.observers = [];
     
     // Wait for document to be ready before initializing
     if (document.readyState === 'loading') {
@@ -18,6 +22,9 @@ class AntiBotDetector {
     } else {
       this.init();
     }
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => this.cleanup());
   }
   
   async init() {
@@ -59,118 +66,59 @@ class AntiBotDetector {
   }
 
   getCategoryColor(category) {
+    // Consistent colors across the extension
     const categoryColors = {
       'CAPTCHA': '#dc2626',           // Red
-      'Anti-Bot': '#ea580c',          // Orange  
+      'Anti-Bot': '#ea580c',          // Orange
+      'Bot Detection': '#ea580c',     // Orange
       'WAF': '#2563eb',               // Blue
       'CDN': '#059669',               // Green
-      'Fingerprinting': '#7c3aed',    // Purple
-      'Security': '#0891b2',          // Cyan
-      'Analytics': '#ca8a04',         // Yellow
-      'Marketing': '#ec4899'          // Pink
+      'Fingerprinting': '#f59e0b',    // Amber (consistent)
+      'Security': '#10b981',          // Emerald (consistent)
+      'Analytics': '#8b5cf6',         // Violet (consistent)
+      'Marketing': '#ec4899',         // Pink
+      'Protection': '#7c3aed',        // Purple
+      'DDoS': '#b91c1c'              // Dark Red
     };
     return categoryColors[category] || '#6b7280'; // Gray default
   }
 
-  getDetectorColor(detectorName) {
-    if (!detectorName) return null;
-    
-    const detectorColors = {
-      'akamai': '#FF6B35',          // Orange
-      'akamai bot manager': '#FF6B35',
-      'cloudflare': '#F48120',      
-      'datadome': '#22C55E',        // Green
-      'imperva': '#00BCD4',
-      'imperva incapsula': '#00BCD4',
-      'incapsula': '#00ACC1',
-      'perimeterx': '#DC2626',      // Red
-      'perimeter x': '#DC2626',
-      'reblaze': '#E91E63',
-      'sucuri': '#8BC34A',
-      'sucuri waf': '#8BC34A',
-      'aws': '#FF9900',
-      'aws shield': '#FF9900',
-      'f5': '#E53935',
-      'f5 networks': '#E53935',
-      'recaptcha': '#4285F4',
-      'google recaptcha': '#4285F4',
-      'hcaptcha': '#0074BF',
-      'funcaptcha': '#9C27B0',
-      'funcaptcha arkose labs': '#9C27B0',
-      'arkose': '#9C27B0',
-      'geetest': '#5E35B1',
-      'custom': '#9E9E9E'
-    };
-    
-    const normalizedName = detectorName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    
-    if (detectorColors[normalizedName]) {
-      return detectorColors[normalizedName];
-    }
-    
-    for (const [key, color] of Object.entries(detectorColors)) {
-      if (normalizedName.includes(key) || key.includes(normalizedName)) {
-        return color;
-      }
-    }
-    
-    return null;
-  }
+  // Colors are now loaded from detector JSON files via storage
+  // No hardcoded colors needed
 
   async loadDetectors() {
     try {
-      // Request detectors from background service (includes base + edited + custom merged)
+      // IMPORTANT: All detector data comes from storage via background service
+      // - Background loads detectors from JSON files on first load
+      // - Stores them in chrome.storage.local
+      // - All subsequent usage reads from storage only
+      // - Colors are defined in detector JSON files, not hardcoded
       
+      // Request detectors from background service (includes base + edited + custom merged)
+      console.log('🔍 CONTENT: Requesting detectors from background');
       const response = await chrome.runtime.sendMessage({ action: 'getDetectors' });
       
       if (response && response.success && response.detectors) {
-        
+        console.log('🔍 CONTENT: Received detectors from background');
         const detectorsData = response.detectors;
         
-        // Ensure all detectors have colors (detector-specific first, then category)
+        // Ensure all detectors have colors (from JSON or fallback to category)
         for (const [key, detector] of Object.entries(detectorsData.detectors)) {
           if (!detector.color) {
-            detector.color = this.getDetectorColor(detector.name) || this.getCategoryColor(detector.category) || '#6b7280';
+            // If no color from JSON, use category color as fallback
+            detector.color = this.getCategoryColor(detector.category) || '#6b7280';
           }
         }
         
         // Use the merged detectors from background (no need to load custom rules separately)
         this.detectors = detectorsData.detectors;
+        console.log('🔍 CONTENT: Loaded detectors count:', Object.keys(this.detectors).length);
+        console.log('🔍 CONTENT: Detector keys:', Object.keys(this.detectors));
         
       } else {
         console.error('Failed to get detectors from background:', response?.error);
-        // Use fallback detectors with basic detection rules
-        this.detectors = {
-          cloudflare: { 
-            name: "Cloudflare", 
-            category: "Anti-Bot", 
-            color: this.getDetectorColor("Cloudflare") || this.getCategoryColor("Anti-Bot"),
-            icon: "cloudflare.png",
-            detection: {
-              cookies: [{ name: "__cf_bm", confidence: 95 }],
-              headers: [{ name: "Server", value: "cloudflare", confidence: 90 }]
-            } 
-          },
-          recaptcha: { 
-            name: "reCAPTCHA", 
-            category: "CAPTCHA", 
-            color: this.getDetectorColor("reCAPTCHA") || this.getCategoryColor("CAPTCHA"),
-            icon: "recaptcha.png",
-            detection: {
-              scripts: [{ content: "grecaptcha", confidence: 95 }],
-              dom: [{ selector: ".g-recaptcha", confidence: 100 }]
-            } 
-          },
-          test_detector: {
-            name: "Test Detector",
-            category: "Test",
-            color: this.getDetectorColor("Test Detector") || this.getCategoryColor("Test"),
-            icon: "custom.png",
-            detection: {
-              urls: [{ pattern: "http", confidence: 100 }] // Should match any HTTP URL
-            }
-          }
-        };
+        // No fallback detectors - detectors must be loaded from background
+        this.detectors = {};
       }
       
       // Custom rules are already merged in the detectors from background
@@ -179,29 +127,6 @@ class AntiBotDetector {
       await this.analyze();
     } catch (error) {
       console.error('Failed to load detectors:', error);
-      // Set some basic detectors as fallback with working detection rules
-      this.detectors = {
-        cloudflare: {
-          name: "Cloudflare",
-          category: "Anti-Bot",
-          color: this.getDetectorColor("Cloudflare") || this.getCategoryColor("Anti-Bot"),
-          icon: "cloudflare.png",
-          detection: {
-            cookies: [{ name: "__cf_bm", confidence: 95 }],
-            headers: [{ name: "Server", value: "cloudflare", confidence: 90 }]
-          }
-        },
-        test_detector: {
-          name: "Test Detector",
-          category: "Test",
-          color: this.getDetectorColor("Test Detector") || this.getCategoryColor("Test"),
-          icon: "custom.png",
-          detection: {
-            urls: [{ pattern: "http", confidence: 100 }] // Should match any HTTP URL
-          }
-        }
-      };
-      await this.analyze();
     }
   }
 
@@ -298,6 +223,9 @@ class AntiBotDetector {
   }
 
   async analyze() {
+    console.log('🔍 CONTENT: analyze() called');
+    console.log('🔍 CONTENT: isEnabled:', this.isEnabled);
+    console.log('🔍 CONTENT: Total detectors available:', Object.keys(this.detectors).length);
     
     if (!this.isEnabled) {
       this.detectedSolutions = [];
@@ -357,6 +285,12 @@ class AntiBotDetector {
     }
 
     this.sendResults();
+    
+    // Don't perform automatic advanced analysis - wait for user to start capture mode
+    // Advanced analysis should only happen when capture mode is explicitly activated
+    // if (this.detectedSolutions.length > 0) {
+    //   this.performAutomaticAdvancedAnalysis();
+    // }
   }
 
   async detectSolution(detector) {
@@ -557,13 +491,7 @@ class AntiBotDetector {
         }
       }
       
-      if (window[rule.content] !== undefined) {
-        matches.push({
-          type: 'global',
-          content: rule.content,
-          confidence: rule.confidence || 50
-        });
-      }
+      // Removed global type detection - not needed
     }
     
     return matches;
@@ -637,6 +565,9 @@ class AntiBotDetector {
   }
 
   sendResults() {
+    console.log('🔍 CONTENT: sendResults() called');
+    console.log('🔍 CONTENT: Detected solutions count:', this.detectedSolutions.length);
+    console.log('🔍 CONTENT: Detected solutions:', this.detectedSolutions);
     
     // Extract parameters for all detected solutions
     this.detectedSolutions.forEach(solution => {
@@ -835,7 +766,7 @@ class AntiBotDetector {
       const cookies = solution.matches.filter(m => m.type === 'cookie');
       const headers = solution.matches.filter(m => m.type === 'header' || m.type === 'meta-header');
       const urls = solution.matches.filter(m => m.type === 'url');
-      const scripts = solution.matches.filter(m => m.type === 'script' || m.type === 'global');
+      const scripts = solution.matches.filter(m => m.type === 'script');
 
       if (cookies.length > 0) {
         parameters.detected_cookies = cookies.map(c => ({
@@ -893,8 +824,9 @@ class AntiBotDetector {
     // Monitor for button clicks that might trigger captcha
     this.monitorButtonClicks();
     
-    // Set up periodic check for new captcha elements
-    setInterval(() => this.refreshAdvancedMonitoring(), 2000);
+    // Set up periodic check for new captcha elements (track for cleanup)
+    const intervalId = setInterval(() => this.refreshAdvancedMonitoring(), 2000);
+    this.intervals.push(intervalId);
   }
 
   monitorRecaptchaInteractions() {
@@ -1000,11 +932,14 @@ class AntiBotDetector {
   }
 
   triggerAdvancedAnalysis(type, trigger) {
+    // Don't trigger automatic advanced analysis
+    // Advanced analysis should only happen when capture mode is explicitly activated
+    // by the user clicking "Start Capture" in the popup
     
-    // Delay analysis slightly to allow for DOM updates after interaction
-    setTimeout(() => {
-      this.performAdvancedAnalysis(type, trigger);
-    }, 500);
+    // Commented out to prevent automatic DOM parameter extraction
+    // setTimeout(() => {
+    //   this.performAdvancedAnalysis(type, trigger);
+    // }, 500);
   }
 
   performAdvancedAnalysis(type, trigger) {
@@ -1030,6 +965,39 @@ class AntiBotDetector {
     this.sendAdvancedResults();
   }
 
+  performAutomaticAdvancedAnalysis() {
+    console.log('🔥 PERFORMING AUTOMATIC ADVANCED ANALYSIS');
+    console.log('🔥 Detected solutions:', this.detectedSolutions);
+    
+    // Clear previous advanced detections
+    this.advancedDetections = [];
+    
+    // Automatically extract advanced parameters for all detected solutions
+    for (const solution of this.detectedSolutions) {
+      console.log('🔥 Processing solution:', solution.name);
+      // Always try to extract parameters for any reCAPTCHA detection
+      const advancedParams = this.extractAdvancedParametersSimple(solution);
+      
+      console.log('🔥 Advanced params extracted:', advancedParams);
+      
+      if (advancedParams && Object.keys(advancedParams).length > 0) {
+        const detection = {
+          ...solution,
+          advancedParameters: advancedParams,
+          trigger: 'automatic',
+          timestamp: Date.now()
+        };
+        this.advancedDetections.push(detection);
+        console.log('🔥 Added to advanced detections:', detection);
+      }
+    }
+    
+    console.log('🔥 FINAL advanced detections:', this.advancedDetections);
+    
+    // Send advanced results to popup
+    this.sendAdvancedResults();
+  }
+
   isRelevantForAdvanced(solution, type) {
     const solutionType = solution.key.toLowerCase();
     
@@ -1040,24 +1008,220 @@ class AntiBotDetector {
     return false;
   }
 
+  // Simplified parameter extraction that always works
+  extractAdvancedParametersSimple(solution) {
+    console.log('🔍 EXTRACTING PARAMS for:', solution.name, solution.key);
+    const params = {};
+    
+    // Check if this is any form of reCAPTCHA - be very flexible
+    const name = (solution.name || '').toLowerCase();
+    const key = (solution.key || '').toLowerCase();
+    const isRecaptcha = name.includes('recaptcha') || 
+                       name.includes('google') || 
+                       key === 'recaptcha' ||
+                       solution.name === 'Google reCAPTCHA';
+    
+    console.log('🔍 Is reCAPTCHA?', isRecaptcha, 'Name:', solution.name, 'Key:', solution.key);
+    
+    if (!isRecaptcha) {
+      console.log('🔍 Not reCAPTCHA, returning empty params');
+      return params;
+    }
+    
+    // Always set basic info
+    params.site_url = window.location.href;
+    params.provider = 'reCAPTCHA';
+    
+    // Try to find sitekey from various sources
+    // 1. Check data-sitekey attributes
+    const sitekeyElements = document.querySelectorAll('[data-sitekey]');
+    if (sitekeyElements.length > 0) {
+      params.sitekey = sitekeyElements[0].getAttribute('data-sitekey');
+      params.site_key = params.sitekey;
+      
+      // Get additional attributes
+      const el = sitekeyElements[0];
+      params.size = el.getAttribute('data-size');
+      // If no size attribute, default to 'normal' for v2
+      if (!params.size) {
+        // Check if element has g-recaptcha class (usually v2 normal)
+        if (el.classList.contains('g-recaptcha')) {
+          params.size = 'normal';
+        } else {
+          params.size = 'normal'; // Default assumption
+        }
+      }
+      params.theme = el.getAttribute('data-theme') || 'light';
+      params.action = el.getAttribute('data-action') || '';
+    }
+    
+    // 2. Check for reCAPTCHA v3 in script tags
+    const scripts = document.querySelectorAll('script[src*="recaptcha/api.js"]');
+    scripts.forEach(script => {
+      const renderMatch = script.src.match(/render=([^&]+)/);
+      if (renderMatch && !params.sitekey) {
+        const renderValue = renderMatch[1];
+        // "explicit" means sitekey is loaded programmatically, not a real sitekey
+        if (renderValue !== 'explicit') {
+          params.sitekey = renderValue;
+          params.site_key = renderValue;
+          params.isReCaptchaV3 = true;
+        } else {
+          // For explicit mode, we need to find the sitekey elsewhere
+          console.log('🔍 V3 uses explicit mode - sitekey loaded programmatically');
+        }
+      }
+    });
+    
+    // 3. Check iframes for sitekey
+    const iframes = document.querySelectorAll('iframe[src*="recaptcha"]');
+    iframes.forEach(iframe => {
+      const keyMatch = iframe.src.match(/[?&]k=([^&]+)/);
+      if (keyMatch && !params.sitekey) {
+        params.sitekey = keyMatch[1];
+        params.site_key = keyMatch[1];
+      }
+    });
+    
+    // Determine version type correctly
+    // IMPORTANT: These are mutually exclusive:
+    // - v2 normal: Has visible checkbox (size="normal" or default)
+    // - v2 invisible: No checkbox, triggers programmatically (size="invisible")
+    // - v3: No UI at all, score-based (has render parameter in script)
+    
+    // Initialize all to false first
+    params.recaptchaV2Normal = false;
+    params.is_invisible = false;
+    params.isInvisible = false;
+    params.isReCaptchaV3 = false;
+    
+    // Check for v3 first (highest priority)
+    const hasV3RenderScript = document.querySelector('script[src*="recaptcha/api.js?render="]');
+    
+    console.log('🎯 VERSION DETECTION - Size:', params.size, 'Has V3 Script:', !!hasV3RenderScript);
+    
+    if (hasV3RenderScript) {
+      params.isReCaptchaV3 = true;
+      params.recaptchaV2Normal = false;
+      params.is_invisible = false;
+      params.isInvisible = false;
+      console.log('🎯 Detected as V3');
+    }
+    // Check for v2 types based on size
+    else if (params.size === 'invisible') {
+      // V2 Invisible - no checkbox
+      params.recaptchaV2Normal = false;
+      params.is_invisible = true;
+      params.isInvisible = true;
+      params.isReCaptchaV3 = false;
+      console.log('🎯 Detected as V2 Invisible');
+    }
+    else {
+      // V2 Normal (default) - has checkbox
+      // This includes when size="normal" or size is undefined/not set
+      params.recaptchaV2Normal = true;
+      params.is_invisible = false;
+      params.isInvisible = false;
+      params.isReCaptchaV3 = false;
+      console.log('🎯 Detected as V2 Normal');
+    }
+    
+    console.log('🎯 Final flags - V2Normal:', params.recaptchaV2Normal, 'V2Invisible:', params.isInvisible, 'V3:', params.isReCaptchaV3);
+    
+    // Check for enterprise
+    params.is_enterprise = !!(window.grecaptcha && window.grecaptcha.enterprise);
+    
+    // No additional overrides needed - version detection is complete above
+    
+    // API domain
+    const hasRecaptchaNet = Array.from(document.querySelectorAll('script')).some(s => 
+      s.src && s.src.includes('recaptcha.net')
+    );
+    params.apiDomain = hasRecaptchaNet ? 'www.recaptcha.net' : '';
+    
+    // S parameter (empty for DOM detection)
+    params.s = '';
+    
+    // Mark as DOM captured (not network captured)
+    params.dom_captured = true;
+    
+    // Try to find sitekey from grecaptcha.execute calls if we still don't have it
+    if (!params.sitekey && window.grecaptcha) {
+      // Try to intercept grecaptcha.execute calls
+      try {
+        // Check if there's a sitekey in any global variable
+        const scripts = document.querySelectorAll('script:not([src])');
+        scripts.forEach(script => {
+          const content = script.textContent || '';
+          // Look for patterns like: grecaptcha.execute('SITEKEY', ...)
+          const execMatch = content.match(/grecaptcha\.execute\(['"]([A-Za-z0-9_-]+)['"]/);
+          if (execMatch && !params.sitekey) {
+            params.sitekey = execMatch[1];
+            params.site_key = execMatch[1];
+            console.log('🔍 Found sitekey from grecaptcha.execute:', params.sitekey);
+          }
+          // Also look for: siteKey: 'SITEKEY' or site_key: 'SITEKEY'
+          const keyMatch = content.match(/(?:siteKey|site_key|SITE_KEY)['"]?\s*[:=]\s*['"]([A-Za-z0-9_-]+)['"]/i);
+          if (keyMatch && !params.sitekey) {
+            params.sitekey = keyMatch[1];
+            params.site_key = keyMatch[1];
+            console.log('🔍 Found sitekey from variable:', params.sitekey);
+          }
+        });
+      } catch (e) {
+        console.log('🔍 Could not extract sitekey from scripts');
+      }
+    }
+    
+    // Ensure we always have at least minimal params for display
+    if (!params.sitekey || params.sitekey === 'detecting...') {
+      params.sitekey = 'detecting...';
+      params.site_key = 'detecting...';
+    }
+    
+    console.log('🔍 EXTRACTED PARAMS:', params);
+    console.log('🔍 PARAMS KEYS:', Object.keys(params));
+    console.log('🔍 VERSION CHECK - V2Normal:', params.recaptchaV2Normal, 'V2Invisible:', params.isInvisible, 'V3:', params.isReCaptchaV3);
+    return params;
+  }
+  
   extractAdvancedParameters(solution, trigger) {
     const params = {};
     
+    // Check if this is a reCAPTCHA detection (be flexible with naming)
+    const isRecaptcha = solution.key === 'recaptcha' || 
+                       solution.name === 'Google reCAPTCHA' ||
+                       solution.name === 'reCAPTCHA' ||
+                       (solution.name && solution.name.toLowerCase().includes('recaptcha'));
+    
     // Extract enhanced reCAPTCHA parameters
-    if (solution.key === 'recaptcha' && typeof window.grecaptcha !== 'undefined') {
+    if (isRecaptcha && typeof window.grecaptcha !== 'undefined') {
       try {
+        // Basic site info
+        params.site_url = window.location.href;
+        params.trigger_type = trigger;
+        
+        // Detect enterprise version
+        params.is_enterprise = !!window.grecaptcha.enterprise;
         params.grecaptcha_version = window.grecaptcha.enterprise ? 'enterprise' : 'standard';
         params.grecaptcha_ready = typeof window.grecaptcha.ready === 'function';
         params.grecaptcha_render = typeof window.grecaptcha.render === 'function';
-        params.trigger_type = trigger;
         
         // Try to get sitekey from DOM
         const sitekeyElement = document.querySelector('[data-sitekey]');
         if (sitekeyElement) {
           params.sitekey = sitekeyElement.getAttribute('data-sitekey');
+          params.site_key = params.sitekey; // Duplicate for compatibility
           params.size = sitekeyElement.getAttribute('data-size') || 'normal';
           params.theme = sitekeyElement.getAttribute('data-theme') || 'light';
           params.badge = sitekeyElement.getAttribute('data-badge') || 'bottomright';
+          params.action = sitekeyElement.getAttribute('data-action') || '';
+          
+          // Determine version based on size
+          params.is_invisible = params.size === 'invisible';
+          params.isInvisible = params.is_invisible;
+          params.recaptchaV2Normal = params.size === 'normal';
+          params.isReCaptchaV3 = !!params.action && params.size === 'invisible';
         }
         
         // Check for invisible reCAPTCHA
@@ -1065,10 +1229,98 @@ class AntiBotDetector {
         if (invisibleElements.length > 0) {
           params.invisible_recaptcha = true;
           params.invisible_count = invisibleElements.length;
+          params.is_invisible = true;
+          params.isInvisible = true;
+        }
+        
+        // Check for v3 indicators
+        const v3Scripts = document.querySelectorAll('script[src*="recaptcha/api.js?render="]');
+        if (v3Scripts.length > 0) {
+          params.isReCaptchaV3 = true;
+          // Try to extract sitekey from script URL
+          v3Scripts.forEach(script => {
+            const match = script.src.match(/render=([^&]+)/);
+            if (match && !params.sitekey) {
+              const renderValue = match[1];
+              // Skip "explicit" which means programmatic loading
+              if (renderValue !== 'explicit') {
+                params.sitekey = renderValue;
+                params.site_key = renderValue;
+              }
+            }
+          });
+        }
+        
+        // Set S parameter (usually empty for DOM detection)
+        params.s = '';
+        
+        // Detect API domain
+        const recaptchaScripts = document.querySelectorAll('script[src*="recaptcha"]');
+        recaptchaScripts.forEach(script => {
+          if (script.src.includes('recaptcha.net')) {
+            params.apiDomain = 'www.recaptcha.net';
+          }
+        });
+        if (!params.apiDomain) {
+          params.apiDomain = '';
         }
       } catch (e) {
         params.extraction_error = e.message;
       }
+    }
+    // Also handle case where grecaptcha is not defined but reCAPTCHA elements exist
+    else if (isRecaptcha) {
+      // Always try to extract what we can, even without grecaptcha object
+      params.site_url = window.location.href;
+      params.trigger_type = trigger;
+      
+      // Try to extract from DOM elements even without grecaptcha object
+      const sitekeyElement = document.querySelector('[data-sitekey]') || 
+                           document.querySelector('.g-recaptcha[data-sitekey]') ||
+                           document.querySelector('div[data-sitekey]');
+      
+      if (sitekeyElement) {
+        params.sitekey = sitekeyElement.getAttribute('data-sitekey');
+        params.site_key = params.sitekey;
+        params.size = sitekeyElement.getAttribute('data-size') || 'normal';
+        params.is_invisible = params.size === 'invisible';
+        params.isInvisible = params.is_invisible;
+        params.recaptchaV2Normal = params.size === 'normal';
+        params.action = sitekeyElement.getAttribute('data-action') || '';
+        params.isReCaptchaV3 = !!params.action && params.size === 'invisible';
+      }
+      
+      // Check for reCAPTCHA iframes as another indicator
+      const recaptchaFrame = document.querySelector('iframe[src*="recaptcha"]');
+      if (recaptchaFrame && !params.sitekey) {
+        // Try to extract sitekey from iframe URL
+        const match = recaptchaFrame.src.match(/[?&]k=([^&]+)/);
+        if (match) {
+          params.sitekey = match[1];
+          params.site_key = match[1];
+        }
+      }
+      
+      // Check for v3 by looking for render parameter in scripts
+      const v3Scripts = document.querySelectorAll('script[src*="recaptcha/api.js?render="]');
+      if (v3Scripts.length > 0 && !params.sitekey) {
+        v3Scripts.forEach(script => {
+          const match = script.src.match(/render=([^&]+)/);
+          if (match) {
+            const renderValue = match[1];
+            // Skip "explicit" which means programmatic loading
+            if (renderValue !== 'explicit') {
+              params.sitekey = renderValue;
+              params.site_key = renderValue;
+              params.isReCaptchaV3 = true;
+            }
+          }
+        });
+      }
+      
+      params.is_enterprise = false;
+      params.s = '';
+      params.apiDomain = '';
     }
     
     // Extract enhanced hCaptcha parameters
@@ -1099,13 +1351,18 @@ class AntiBotDetector {
   }
 
   sendAdvancedResults() {
+    console.log('📤 SENDING ADVANCED RESULTS:', this.advancedDetections);
     if (this.advancedDetections.length > 0) {
       chrome.runtime.sendMessage({
         action: 'advancedResults',
         results: this.advancedDetections,
         url: window.location.href,
         timestamp: Date.now()
+      }, (response) => {
+        console.log('📤 Advanced results sent, response:', response);
       });
+    } else {
+      console.log('📤 No advanced detections to send');
     }
   }
 
@@ -1148,6 +1405,30 @@ class AntiBotDetector {
     
     // Listen for hash changes
     window.addEventListener('hashchange', urlChanged);
+  }
+  
+  cleanup() {
+    // Clean up all intervals
+    this.intervals.forEach(interval => clearInterval(interval));
+    this.intervals = [];
+    
+    // Clean up all observers
+    this.observers.forEach(observer => {
+      if (observer.disconnect) {
+        observer.disconnect();
+      }
+    });
+    this.observers = [];
+    
+    // Clean up all event listeners
+    this.eventListeners.forEach(({element, event, handler}) => {
+      if (element && element.removeEventListener) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    this.eventListeners = [];
+    
+    console.log('🧹 ShieldEye: Cleaned up resources');
   }
 }
 
