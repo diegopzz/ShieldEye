@@ -52,7 +52,7 @@ ShieldEye is an open-source browser extension that detects and analyzes anti-bot
 - **Confidence Scoring**: Each detection includes a confidence percentage
 - **Multi-Layer Detection**: Analyzes cookies, headers, scripts, and DOM elements
 - **Real-Time Monitoring**: Continuous page monitoring
-- **Parameter Capture**: Advanced mode for capturing CAPTCHA parameters
+- **Parameter Capture**: Soon
 
 ### 🎨 User Experience
 - **Dark/Light Theme**: Automatic theme detection
@@ -124,11 +124,7 @@ ShieldEye uses multiple detection methods:
 Simply navigate to any website with the extension installed. Detected services appear in the popup with confidence scores.
 
 ### Advanced Capture Mode
-1. Go to the Advanced tab
-2. Select detected CAPTCHA service
-3. Click "Start Capturing"
-4. Trigger the CAPTCHA on the page
-5. View captured parameters
+Coming soon!
 
 ### Custom Rules
 Create custom detection rules for services not yet supported:
@@ -220,7 +216,6 @@ We welcome contributions! Here's how to help:
 ## 🐛 Known Issues
 
 - Some services may require page refresh for detection
-- Parameter capture currently supports reCAPTCHA only
 - Detection accuracy varies by implementation
 
 ## 📚 Resources
