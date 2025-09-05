@@ -81,32 +81,6 @@ For detailed installation instructions, see [docs/INSTALLATION.md](docs/INSTALLA
    - Navigate to any website
    - View detected security services instantly!
 
-## 📁 Project Structure
-
-```
-ShieldEye/
-├── core/                     # Extension core files
-│   ├── manifest.json        # Extension configuration
-│   ├── background.js        # Service worker for network monitoring
-│   ├── content.js          # Page analysis script
-│   ├── popup.html/js/css   # Extension UI
-│   ├── detectors/          # Detection configurations
-│   │   ├── anti-bot/      # Anti-bot detectors
-│   │   ├── captcha/       # CAPTCHA detectors
-│   │   └── fingerprinting/# Fingerprinting detectors
-│   ├── icons/             # Extension icons
-│   ├── modules/           # Additional modules
-│   └── scripts/           # Helper scripts
-├── docs/                    # Documentation
-│   ├── INSTALLATION.md    # Installation guide
-│   └── SECURITY.md        # Security policy
-├── .github/               # GitHub templates
-│   ├── ISSUE_TEMPLATE/   # Issue templates
-│   └── pull_request_template.md
-├── README.md             # This file
-├── CONTRIBUTING.md       # Contributing guidelines
-└── LICENSE              # MIT License
-```
 
 ## 🔧 How It Works
 
