@@ -217,13 +217,6 @@ ShieldEye is currently not supported on mobile browsers due to extension API lim
 
 ---
 
-## 🆘 Need Help?
-
-- 📖 **Documentation**: Check the [README](README.md) and [Wiki](https://github.com/diegopzz/shieldeye/wiki)
-- 🐛 **Bug Reports**: Use [GitHub Issues](https://github.com/diegopzz/shieldeye/issues)
-- 💬 **Discussions**: Join [GitHub Discussions](https://github.com/diegopzz/shieldeye/discussions)
-- 🔒 **Security**: Review our [Security Policy](SECURITY.md)
-
 ---
 
 **Happy Detecting! 🛡️**
