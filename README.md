@@ -20,7 +20,7 @@
       </td>
             <td width="50%">
         <h3 align="center">Advanced</h3>
-   <img width="456" height="400" alt="image" src="https://github.com/user-attachments/assets/c99317ea-a1bb-4768-9cbc-4175218d0e58" />
+        <img width="456" height="400" alt="image" src="https://github.com/user-attachments/assets/0f838aee-f476-4667-b599-9117b59a079f" />
       </td>
     </tr>
     <tr>
