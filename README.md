@@ -55,7 +55,6 @@ ShieldEye is an open-source browser extension that detects and analyzes anti-bot
 - **Parameter Capture**: Soon
 
 ### 🎨 User Experience
-- **Dark/Light Theme**: Automatic theme detection
 - **Tabbed Interface**: Organized sections for different features
 - **Visual Indicators**: Badge counter shows active detections
 - **History Tracking**: Keep track of detected services across sites
