@@ -213,6 +213,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Security**: [Security Policy](docs/SECURITY.md)
 
 ---
+## Contact 
+**E-mail**: diegojpm@pm.me
+
 
 <div align="center">
   Made with ❤️ by the open source community
