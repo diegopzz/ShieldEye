@@ -42,9 +42,10 @@
     "128": "icons/icon128.png"
   },
   "web_accessible_resources": [
-    "icons/providers/*", 
-    "detectors/**/*",
-    "scripts/pbf.js", 
+    "icons/providers/*",
+    "detectors/*",
+    "detectors/*/*",
+    "scripts/pbf.js",
     "scripts/message.browser.js",
     "modules/*.js",
     "modules/capture/*.js"
