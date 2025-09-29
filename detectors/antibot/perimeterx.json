@@ -1,0 +1,81 @@
+{
+  "id": "perimeterx",
+  "name": "PerimeterX",
+  "category": "Anti-Bot",
+  "color": "#DC2626",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.perimeterx.com/",
+  "icon": "perimeterx_official.png",
+  "description": "Behavioral-based bot detection with real-time risk scoring",
+  "detection": {
+    "cookies": [
+      {
+        "name": "_px2",
+        "confidence": 95,
+        "description": "PerimeterX tracking cookie v2"
+      },
+      {
+        "name": "_px3",
+        "confidence": 100,
+        "description": "PerimeterX tracking cookie v3"
+      },
+      {
+        "name": "_pxhd",
+        "confidence": 90,
+        "description": "PerimeterX header data"
+      },
+      {
+        "name": "_pxvid",
+        "confidence": 85,
+        "description": "PerimeterX visitor ID"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-PX-Authorization",
+        "confidence": 100,
+        "description": "PerimeterX authorization header"
+      },
+      {
+        "name": "X-PX-Original-Token",
+        "confidence": 95,
+        "description": "Original token header"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "collector-*.perimeterx.net",
+        "confidence": 100,
+        "description": "Data collector endpoint"
+      },
+      {
+        "pattern": "/api/v*/collector",
+        "confidence": 95,
+        "description": "Collector API endpoint"
+      },
+      {
+        "pattern": "px.js",
+        "confidence": 90,
+        "description": "PerimeterX JavaScript"
+      }
+    ],
+    "content": [
+      {
+        "content": "window._pxAppId",
+        "confidence": 100,
+        "description": "PerimeterX application ID"
+      },
+      {
+        "content": "pxInit",
+        "confidence": 95,
+        "description": "PerimeterX initialization function"
+      },
+      {
+        "content": "_pxAction",
+        "confidence": 90
+      }
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "id": "hcaptcha",
+  "name": "hCaptcha",
+  "category": "CAPTCHA",
+  "color": "#0074BF",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.hcaptcha.com/",
+  "icon": "hcaptcha_official.png",
+  "description": "Privacy-focused CAPTCHA service that rewards websites",
+  "detection": {
+    "urls": [
+      {
+        "pattern": "hcaptcha.com",
+        "confidence": 100,
+        "description": "hCaptcha domain"
+      },
+      {
+        "pattern": "/checksiteconfig",
+        "confidence": 95,
+        "description": "Site configuration check"
+      },
+      {
+        "pattern": "/getcaptcha",
+        "confidence": 95,
+        "description": "Captcha retrieval endpoint"
+      }
+    ],
+    "content": [
+      {
+        "content": "hcaptcha",
+        "confidence": 100,
+        "description": "hCaptcha object"
+      },
+      {
+        "content": "h-captcha",
+        "confidence": 95,
+        "description": "hCaptcha container class"
+      },
+      {
+        "content": "hcaptcha.render",
+        "confidence": 90
+      },
+      {
+        "content": "hcaptcha.execute",
+        "confidence": 90
+      }
+    ],
+    "dom": [
+      {
+        "selector": ".h-captcha",
+        "confidence": 95,
+        "description": "hCaptcha container"
+      },
+      {
+        "selector": "[data-hcaptcha-sitekey]",
+        "confidence": 90
+      },
+      {
+        "selector": "iframe[src*='hcaptcha.com']",
+        "confidence": 95
+      }
+    ]
+  }
+}

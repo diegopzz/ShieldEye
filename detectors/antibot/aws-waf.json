@@ -1,0 +1,51 @@
+{
+  "id": "aws-waf",
+  "name": "AWS WAF",
+  "category": "Anti-Bot",
+  "color": "#FF9900",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://aws.amazon.com/waf/",
+  "icon": "aws_official.png",
+  "description": "Amazon Web Services Web Application Firewall with bot control",
+  "detection": {
+    "cookies": [
+      {
+        "name": "aws-waf-token",
+        "confidence": 95,
+        "description": "AWS WAF session token"
+      },
+      {
+        "name": "awswaf*",
+        "confidence": 90,
+        "description": "AWS WAF cookies"
+      }
+    ],
+    "headers": [],
+    "urls": [
+      {
+        "pattern": "/challenge.js",
+        "confidence": 80,
+        "description": "AWS WAF challenge script"
+      },
+      {
+        "pattern": "awswaf",
+        "confidence": 85,
+        "description": "AWS WAF in URL"
+      }
+    ],
+    "content": [
+      {
+        "content": "challenge.js",
+        "confidence": 80,
+        "description": "AWS WAF challenge script"
+      },
+      {
+        "content": "awswaf",
+        "confidence": 85,
+        "description": "AWS WAF reference"
+      }
+    ]
+  }
+}

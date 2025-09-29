@@ -1,0 +1,75 @@
+<!-- Settings Modal Template -->
+<div id="settingsModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="header-content">
+        <h2>Settings</h2>
+        <p>Extension configuration</p>
+      </div>
+      <button id="closeSettingsModal" class="close-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="settings-section">
+        <h3>General Settings</h3>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <span>Enable Notifications</span>
+            <span class="setting-description">Show notifications when security systems are detected</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="notificationsEnabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">
+            <span>Auto Detection</span>
+            <span class="setting-description">Automatically detect security systems on page load</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="autoDetectionEnabled" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">History Limit</label>
+          <input type="number" id="historyLimit" class="input-field" min="10" max="1000" value="100">
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Confidence Threshold</label>
+          <div class="range-container">
+            <input type="range" id="confidenceThreshold" class="range-field" min="0" max="100" value="70">
+            <span class="range-value" id="confidenceValue">70%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Data Management</h3>
+
+        <div class="action-group">
+          <button id="clearAllDataBtn" class="warning-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24">
+              <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" fill="currentColor"/>
+            </svg>
+            Clear All Data
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button id="resetSettingsBtn" class="secondary-btn">Reset to Defaults</button>
+      <button id="saveSettingsBtn" class="primary-btn">Save Settings</button>
+    </div>
+  </div>
+</div>

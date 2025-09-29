@@ -1,0 +1,96 @@
+<!-- Detection Tab Template -->
+  <div id="loadingState" class="loading-state" style="display: flex;">
+    <div class="spinner"></div>
+    <span>Analyzing page...</span>
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display: none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.5">
+      <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+    <h3>No security systems detected</h3>
+    <p>This page appears to be free of bot protection systems.</p>
+  </div>
+
+  <div id="detectionResults" class="detection-results" style="display: none;">
+    <div id="detectionOverview" class="detection-overview" style="display: none;">
+      <div class="url-display-line">
+        <div class="url-display-container">
+          <img id="siteFavicon" class="site-favicon" src="" alt="" onerror="this.src='icons/icon16.png'">
+          <span id="siteUrl" class="site-url" title=""></span>
+        </div>
+      </div>
+      <div class="stats-line">
+        <div class="stat-inline detections-count" title="Detections">
+          <div class="stat-icon-inline">🔍</div>
+          <div class="stat-content-inline">
+            <div class="stat-label-inline">DETECTIONS</div>
+            <div class="stat-value-inline" id="detectionsCount">0</div>
+          </div>
+        </div>
+
+        <div class="stat-inline overall-confidence" title="Confidence">
+          <div class="stat-icon-inline">🎯</div>
+          <div class="stat-content-inline">
+            <div class="stat-label-inline">CONFIDENCE</div>
+            <div class="stat-value-inline" id="overallConfidence">0%</div>
+          </div>
+        </div>
+
+        <div class="stat-inline difficulty-level" title="Difficulty">
+          <div class="stat-icon-inline" id="difficultyIcon">🛡️</div>
+          <div class="stat-content-inline">
+            <div class="stat-label-inline">DIFFICULTY</div>
+            <div class="stat-value-inline" id="difficultyLevel">Low</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cache-expiry-line">
+        <div class="stat-inline cache-expiry-stat" title="Cache Expiration">
+          <div class="stat-icon-inline">⏱️</div>
+          <div class="stat-content-inline">
+            <div class="stat-label-inline">CACHE EXPIRATION</div>
+            <div class="stat-value-inline" id="cacheExpiry">-</div>
+          </div>
+        </div>
+        <button id="clearCacheBtn" class="clear-cache-btn-inline" title="Clear cached detection">
+          <svg width="14" height="14" viewBox="0 0 24 24">
+            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" fill="currentColor"/>
+          </svg>
+          Clear Cache
+        </button>
+      </div>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="detectionSearch" class="search-input" placeholder="Search by name, category, method, or any detail...">
+    </div>
+
+    <div id="resultsList" class="results-list"></div>
+
+    <div id="detectionPagination" class="pagination">
+      <div class="pagination-info">Showing 1-10 of 0</div>
+      <div class="pagination-controls">
+        <button class="pagination-btn pagination-btn-prev" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12Z" fill="currentColor"/>
+          </svg>
+        </button>
+        <div class="page-numbers"></div>
+        <button class="pagination-btn pagination-btn-next" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M10 6L8.59 7.41L13.17 12L8.59 16.59L10 18L16 12Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="disabledState" class="disabled-state" style="display: none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.5">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 6L12 10.5 8.5 8 12 5.5 15.5 8zm-.5 9.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm-6-5c0 .83-.67 1.5-1.5 1.5S6 13.33 6 12.5s.67-1.5 1.5-1.5S9 11.67 9 12.5z" fill="currentColor"/>
+    </svg>
+    <h3>Detection Disabled</h3>
+    <p>Toggle the switch to enable security detection.</p>
+  </div>

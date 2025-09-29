@@ -1,0 +1,585 @@
+<!-- Rules Tab Template -->
+  <div class="rules-header">
+    <!-- Search Bar -->
+    <div class="search-container">
+      <input type="text" id="rulesSearch" class="search-input" placeholder="Search detectors by name or pattern...">
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button id="importRulesBtn" class="import-btn-small" title="Import">
+        Import
+      </button>
+      <input type="file" id="importRulesFile" accept=".json" style="display: none;">
+      <button id="exportRulesBtn" class="export-btn-small" title="Export">
+        Export
+      </button>
+      <button id="clearRulesBtn" class="clear-btn-small" title="Clear All Rules">
+        Clear
+      </button>
+      <button id="addDetectorBtn" class="add-btn" title="Add New Detector">
+        Add
+      </button>
+    </div>
+  </div>
+
+  <div id="rulesList" class="rules-list"></div>
+
+  <div id="rulesPagination" class="pagination" style="display: none;">
+    <div class="pagination-info">Showing 1-10 of 0</div>
+    <div class="pagination-controls">
+      <button class="pagination-btn pagination-btn-prev" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12Z" fill="currentColor"/>
+        </svg>
+      </button>
+      <div class="page-info">
+        <span>Page</span>
+        <input type="text" class="page-input" value="1" />
+        <span>of</span>
+        <span class="total-pages">1</span>
+      </div>
+      <button class="pagination-btn pagination-btn-next" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path d="M10 6L8.59 7.41L13.17 12L8.59 16.59L10 18L16 12Z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="detectorsEmpty" class="empty-state" style="display: none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.5">
+      <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.98C19.47,12.66 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.97 19.05,5.05L16.56,6.05C16.04,5.65 15.48,5.32 14.87,5.07L14.49,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.51,2.42L9.13,5.07C8.52,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.72,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.52,18.68 9.13,18.93L9.51,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.49,21.58L14.87,18.93C15.48,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.28,19.04 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.98Z" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+    <h3>No detectors loaded</h3>
+    <p>Detectors will appear here once loaded from storage and files.</p>
+  </div>
+
+  <!-- Edit Rule Modal -->
+  <div id="editRuleModal" class="rule-modal" style="display: none;">
+    <div class="rule-modal-backdrop"></div>
+    <div class="rule-modal-content">
+      <div class="rule-modal-header">
+        <h2 id="editRuleModalTitle">Edit Detection Rule</h2>
+        <button id="closeRuleModal" class="rule-modal-close">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rule-modal-body">
+        <!-- Detector Information -->
+        <div class="rule-section">
+          <label class="section-title">Detector Information</label>
+          <div class="detector-info-grid">
+            <div class="detector-field">
+              <label class="field-label">Name:</label>
+              <input type="text" id="detectorNameInput" class="detector-input" placeholder="Enter detector name">
+            </div>
+            <div class="detector-field">
+              <label class="field-label">Category:</label>
+              <select id="detectorCategorySelect" class="detector-select">
+                <option value="antibot">Anti-Bot</option>
+                <option value="captcha">CAPTCHA</option>
+                <option value="fingerprint">Fingerprinting</option>
+                <option value="waf">WAF</option>
+              </select>
+            </div>
+            <div class="detector-field">
+              <label class="field-label">Icon:</label>
+              <div class="icon-selector">
+                <div class="current-icon">
+                  <img id="currentDetectorIcon" src="" alt="Icon">
+                </div>
+                <button type="button" class="change-icon-btn">Change Icon</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-section">
+          <label class="section-title">Badge Color</label>
+          <div class="color-picker-grid">
+            <div class="color-option" style="background: #3b82f6;" data-color="#3b82f6"></div>
+            <div class="color-option" style="background: #10b981;" data-color="#10b981"></div>
+            <div class="color-option" style="background: #ef4444;" data-color="#ef4444"></div>
+            <div class="color-option" style="background: #f59e0b;" data-color="#f59e0b"></div>
+            <div class="color-option" style="background: #8b5cf6;" data-color="#8b5cf6"></div>
+            <div class="color-option" style="background: #06b6d4;" data-color="#06b6d4"></div>
+            <div class="color-option" style="background: #eab308;" data-color="#eab308"></div>
+            <div class="color-option" style="background: #6b7280;" data-color="#6b7280"></div>
+            <div class="color-option" style="background: #ec4899;" data-color="#ec4899"></div>
+            <div class="color-option" style="background: #8b4513;" data-color="#8b4513"></div>
+            <div class="color-option rainbow-picker" id="rainbowPicker" title="Custom Color">
+              <span class="custom-color-hex"></span>
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <defs>
+                  <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ff0000"/>
+                    <stop offset="16.66%" style="stop-color:#ff8800"/>
+                    <stop offset="33.33%" style="stop-color:#ffff00"/>
+                    <stop offset="50%" style="stop-color:#00ff00"/>
+                    <stop offset="66.66%" style="stop-color:#0088ff"/>
+                    <stop offset="83.33%" style="stop-color:#8800ff"/>
+                    <stop offset="100%" style="stop-color:#ff00ff"/>
+                  </linearGradient>
+                </defs>
+                <rect x="2" y="2" width="20" height="20" rx="4" fill="url(#rainbow)"/>
+                <path d="M12,17.5L8,14L10,9L12,11L14,9L16,14L12,17.5Z" fill="white" opacity="0.8"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-section">
+          <label class="section-title">Detection Methods</label>
+          <div id="detectionMethodsContainer"></div>
+        </div>
+      </div>
+
+      <div class="rule-modal-footer">
+        <button id="cancelRuleEdit" class="rule-btn rule-btn-cancel">Cancel</button>
+        <button id="saveRuleEdit" class="rule-btn rule-btn-save">Save Rule</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Color Picker Modal -->
+  <div id="advancedColorModal" class="rule-modal" style="display: none;">
+    <div class="rule-modal-backdrop"></div>
+    <div class="rule-modal-content canvas-color-modal">
+      <div class="rule-modal-body">
+        <div class="canvas-color-picker">
+          <div class="color-picker-canvas">
+            <canvas id="colorCanvas" width="240" height="160"></canvas>
+            <div id="colorPickerCursor" class="color-picker-cursor"></div>
+          </div>
+
+          <div class="hue-strip">
+            <canvas id="hueCanvas" width="20" height="160"></canvas>
+            <div id="hueSliderCursor" class="hue-slider-cursor"></div>
+          </div>
+
+          <div class="color-controls">
+            <div class="selected-color-display">
+              <div id="selectedColorPreview" class="selected-color-preview"></div>
+            </div>
+
+            <div class="rgb-controls">
+              <div class="rgb-input-group">
+                <label>R</label>
+                <input type="number" id="rInput" min="0" max="255" class="rgb-input">
+              </div>
+              <div class="rgb-input-group">
+                <label>G</label>
+                <input type="number" id="gInput" min="0" max="255" class="rgb-input">
+              </div>
+              <div class="rgb-input-group">
+                <label>B</label>
+                <input type="number" id="bInput" min="0" max="255" class="rgb-input">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rule-modal-footer">
+        <button id="cancelAdvancedColor" class="rule-btn rule-btn-cancel">Cancel</button>
+        <button id="selectAdvancedColor" class="rule-btn rule-btn-save">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Method Settings Modal -->
+  <div id="methodSettingsModal" class="rule-modal" style="display: none;">
+    <div class="rule-modal-backdrop"></div>
+    <div class="rule-modal-content method-settings-modal">
+      <div class="rule-modal-header">
+        <h2>Detection Method Settings</h2>
+        <button id="closeMethodSettings" class="rule-modal-close">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rule-modal-body">
+        <!-- Confidence Level -->
+        <div class="settings-group">
+          <label class="settings-label">
+            Confidence Level: <span id="confidenceValue">100</span>%
+          </label>
+          <div class="confidence-slider-container">
+            <input type="range" id="confidenceSlider" class="confidence-slider" min="0" max="100" value="100">
+            <div class="confidence-marks">
+              <span>0</span>
+              <span>25</span>
+              <span>50</span>
+              <span>75</span>
+              <span>100</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Search Scope (for CONTENT detection only) -->
+        <div class="settings-group" id="contentScopeGroup">
+          <h3 class="settings-group-title">Content Search Scope (CONTENT detection only)</h3>
+          <p style="font-size: 10px; color: var(--text-muted); margin: 0 0 12px 0;"><strong>Default: Searches entire page.</strong> Enable options below to restrict search to specific areas only.</p>
+          <div class="settings-options">
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Only check scripts</span>
+                <p style="font-size: 10px; color: var(--text-muted); margin: 4px 0 0 0;">Restrict search to JavaScript code and script URLs only</p>
+              </div>
+              <label class="toggle-switch" for="checkScripts">
+                <input type="checkbox" id="checkScripts" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Only check class attributes</span>
+                <p style="font-size: 10px; color: var(--text-muted); margin: 4px 0 0 0;">Restrict search to class="..." attributes only</p>
+              </div>
+              <label class="toggle-switch" for="checkClasses">
+                <input type="checkbox" id="checkClasses" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Only check value/data attributes</span>
+                <p style="font-size: 10px; color: var(--text-muted); margin: 4px 0 0 0;">Restrict search to value="...", data-*="..." attributes only</p>
+              </div>
+              <label class="toggle-switch" for="checkValues">
+                <input type="checkbox" id="checkValues" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pattern Matching Settings (simplified) -->
+        <div class="settings-group">
+          <h3 class="settings-group-title" id="patternOptionsTitle">Pattern Matching Options</h3>
+          <p style="font-size: 10px; color: var(--text-muted); margin: 0 0 12px 0;">Configure how the pattern should match</p>
+          <div class="settings-options">
+            <div class="setting-option">
+              <div class="option-content">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="setting-label">Enable Regular Expression</span>
+                  <button id="regexHelperBtn" class="regex-helper-btn" title="Regex Helper">?</button>
+                </div>
+                <div class="option-examples" id="nameRegexExamples">
+                  <span class="example-match">✓ Matches:</span> _ab.*, _abck$, ^bm_
+                  <span class="example-separator">|</span>
+                  <span class="example-nomatch">✗ Won't match:</span> literal text only
+                </div>
+              </div>
+              <label class="toggle-switch" for="nameRegex">
+                <input type="checkbox" id="nameRegex" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Match Whole Word Only</span>
+                <div class="option-examples" id="nameWholeWordExamples">
+                  <span class="example-match">✓ Matches:</span> _abck (alone)
+                  <span class="example-separator">|</span>
+                  <span class="example-nomatch">✗ Won't match:</span> test_abck, _abckTest
+                </div>
+              </div>
+              <label class="toggle-switch" for="nameWholeWord">
+                <input type="checkbox" id="nameWholeWord" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Case Sensitive</span>
+                <div class="option-examples" id="nameCaseExamples">
+                  <span class="example-match">✓ Matches:</span> Test (exact case)
+                  <span class="example-separator">|</span>
+                  <span class="example-nomatch">✗ Won't match:</span> test, TEST
+                </div>
+              </div>
+              <label class="toggle-switch" for="nameCaseSensitive">
+                <input type="checkbox" id="nameCaseSensitive" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Value Field Settings (hidden for single-input types) -->
+        <div class="settings-group" id="valueFieldOptionsGroup" style="display: none;">
+          <h3 class="settings-group-title">Value Field Options</h3>
+          <p style="font-size: 10px; color: var(--text-muted); margin: 0 0 12px 0;">Configure how the value pattern should match</p>
+          <div class="settings-options">
+            <div class="setting-option">
+              <div class="option-content">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="setting-label">Enable Regular Expression</span>
+                  <button id="regexHelperBtnValue" class="regex-helper-btn" title="Regex Helper">?</button>
+                </div>
+              </div>
+              <label class="toggle-switch" for="valueRegex">
+                <input type="checkbox" id="valueRegex" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Match Whole Word Only</span>
+              </div>
+              <label class="toggle-switch" for="valueWholeWord">
+                <input type="checkbox" id="valueWholeWord" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-option">
+              <div class="option-content">
+                <span class="setting-label">Case Sensitive</span>
+              </div>
+              <label class="toggle-switch" for="valueCaseSensitive">
+                <input type="checkbox" id="valueCaseSensitive" class="toggle-input">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-modal-footer">
+        <button id="cancelMethodSettings" class="rule-btn rule-btn-cancel">Cancel</button>
+        <button id="saveMethodSettings" class="rule-btn rule-btn-save">Apply Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOM Selector Helper Modal -->
+  <div id="domHelperModal" class="rule-modal" style="display: none;">
+    <div class="rule-modal-backdrop"></div>
+    <div class="rule-modal-content" style="max-width: 600px;">
+      <div class="rule-modal-header">
+        <h2>DOM Selector Helper</h2>
+        <button id="closeDomHelper" class="rule-modal-close">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rule-modal-body">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+          Click a template below to use it, or customize the pattern in the input field.
+        </p>
+
+        <div class="dom-templates">
+          <!-- Class Selector -->
+          <div class="dom-template">
+            <div class="template-code">.{name}</div>
+            <div class="template-description">Class Selector - Example: .g-recaptcha, .h-captcha</div>
+          </div>
+
+          <!-- ID Selector -->
+          <div class="dom-template">
+            <div class="template-code">#{name}</div>
+            <div class="template-description">ID Selector - Example: #cf-wrapper, #captcha-container</div>
+          </div>
+
+          <!-- Attribute Selector -->
+          <div class="dom-template">
+            <div class="template-code">[data-{name}]</div>
+            <div class="template-description">Attribute Selector - Example: [data-sitekey], [data-callback]</div>
+          </div>
+
+          <!-- Attribute Contains -->
+          <div class="dom-template">
+            <div class="template-code">[class*='{name}']</div>
+            <div class="template-description">Class Contains - Example: [class*='recaptcha']</div>
+          </div>
+
+          <!-- IFrame with src -->
+          <div class="dom-template">
+            <div class="template-code">iframe[src*='{name}']</div>
+            <div class="template-description">IFrame with URL - Example: iframe[src*='recaptcha']</div>
+          </div>
+
+          <!-- Tag Element -->
+          <div class="dom-template">
+            <div class="template-code">{name}</div>
+            <div class="template-description">HTML Tag - Example: canvas, iframe, video</div>
+          </div>
+
+          <!-- Divider for reCAPTCHA specific -->
+          <div style="margin: 16px 0; border-top: 1px solid var(--border); padding-top: 16px;">
+            <div style="font-weight: 600; font-size: 11px; margin-bottom: 12px; color: var(--text-secondary);">reCAPTCHA Specific Selectors:</div>
+          </div>
+
+          <!-- reCAPTCHA Container -->
+          <div class="dom-template">
+            <div class="template-code">.g-recaptcha</div>
+            <div class="template-description">reCAPTCHA V2 Container - Main reCAPTCHA div element</div>
+          </div>
+
+          <!-- reCAPTCHA IFrame by Title -->
+          <div class="dom-template">
+            <div class="template-code">iframe[title*="reCAPTCHA"]</div>
+            <div class="template-description">reCAPTCHA IFrame - Matches any reCAPTCHA iframe</div>
+          </div>
+
+          <!-- reCAPTCHA IFrame by Src -->
+          <div class="dom-template">
+            <div class="template-code">iframe[src*="google.com/recaptcha"]</div>
+            <div class="template-description">reCAPTCHA IFrame by URL - Google reCAPTCHA iframe</div>
+          </div>
+
+          <!-- reCAPTCHA Checkbox -->
+          <div class="dom-template">
+            <div class="template-code">.recaptcha-checkbox</div>
+            <div class="template-description">reCAPTCHA Checkbox - V2 checkbox element</div>
+          </div>
+
+          <!-- reCAPTCHA Anchor -->
+          <div class="dom-template">
+            <div class="template-code">#recaptcha-anchor</div>
+            <div class="template-description">reCAPTCHA Anchor - Clickable anchor element (inside iframe)</div>
+          </div>
+
+          <!-- reCAPTCHA Data Attribute -->
+          <div class="dom-template">
+            <div class="template-code">[data-sitekey]</div>
+            <div class="template-description">reCAPTCHA Site Key - Element with sitekey attribute</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <div style="font-weight: 600; font-size: 11px; margin-bottom: 8px; color: var(--text-secondary);">Custom Input:</div>
+          <input type="text" id="domCustomInput" class="dom-custom-input" placeholder="Enter custom selector or click template above...">
+        </div>
+      </div>
+
+      <div class="rule-modal-footer">
+        <button id="cancelDomHelper" class="rule-btn rule-btn-cancel">Cancel</button>
+        <button id="useDomSelector" class="rule-btn rule-btn-save">Use Selector</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Regex Helper Modal -->
+  <div id="regexHelperModal" class="rule-modal" style="display: none;">
+    <div class="rule-modal-backdrop"></div>
+    <div class="rule-modal-content" style="max-width: 600px;">
+      <div class="rule-modal-header">
+        <h2>Regular Expression Helper</h2>
+        <button id="closeRegexHelper" class="rule-modal-close">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rule-modal-body">
+        <!-- User's Input Preview -->
+        <div id="userInputPreview" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+          <div style="font-weight: 600; font-size: 11px; margin-bottom: 8px; color: var(--text-primary);">Your Input:</div>
+          <div style="font-family: 'Monaco', 'Courier New', monospace; font-size: 13px; color: var(--accent); padding: 8px; background: var(--bg-primary); border-radius: 4px;" id="currentInputText"></div>
+        </div>
+
+        <!-- Suggested patterns based on input -->
+        <div id="suggestedPatterns" style="display: none; margin-bottom: 16px;">
+          <div style="font-weight: 600; font-size: 12px; margin-bottom: 12px; color: var(--text-primary);">Suggested Patterns for Your Input:</div>
+          <div class="dom-templates" id="suggestedPatternsContainer"></div>
+        </div>
+
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+          Common regex patterns. Click to use.
+        </p>
+
+        <div class="dom-templates">
+          <!-- Any characters -->
+          <div class="regex-pattern" data-pattern=".*">
+            <div class="template-code">.*</div>
+            <div class="template-description">Any characters (zero or more)</div>
+          </div>
+
+          <!-- Starts with -->
+          <div class="regex-pattern" data-pattern="^text">
+            <div class="template-code">^text</div>
+            <div class="template-description">Starts with "text"</div>
+          </div>
+
+          <!-- Ends with -->
+          <div class="regex-pattern" data-pattern="text$">
+            <div class="template-code">text$</div>
+            <div class="template-description">Ends with "text"</div>
+          </div>
+
+          <!-- Contains -->
+          <div class="regex-pattern" data-pattern=".*text.*">
+            <div class="template-code">.*text.*</div>
+            <div class="template-description">Contains "text" anywhere</div>
+          </div>
+
+          <!-- OR operator -->
+          <div class="regex-pattern" data-pattern="(abc|xyz)">
+            <div class="template-code">(abc|xyz)</div>
+            <div class="template-description">Matches "abc" OR "xyz"</div>
+          </div>
+
+          <!-- Digits -->
+          <div class="regex-pattern" data-pattern="\d+">
+            <div class="template-code">\d+</div>
+            <div class="template-description">One or more digits (0-9)</div>
+          </div>
+
+          <!-- Specific length -->
+          <div class="regex-pattern" data-pattern="\d{10}">
+            <div class="template-code">\d{10}</div>
+            <div class="template-description">Exactly 10 digits</div>
+          </div>
+
+          <!-- Alphanumeric -->
+          <div class="regex-pattern" data-pattern="[a-zA-Z0-9]+">
+            <div class="template-code">[a-zA-Z0-9]+</div>
+            <div class="template-description">Letters and numbers</div>
+          </div>
+
+          <!-- Optional -->
+          <div class="regex-pattern" data-pattern="text?">
+            <div class="template-code">text?</div>
+            <div class="template-description">Last character optional</div>
+          </div>
+
+          <!-- Word boundary -->
+          <div class="regex-pattern" data-pattern="\bword\b">
+            <div class="template-code">\bword\b</div>
+            <div class="template-description">Exact word match</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+          <div style="font-weight: 600; font-size: 11px; margin-bottom: 8px; color: var(--text-primary);">Quick Reference:</div>
+          <div style="font-size: 10px; color: var(--text-muted); line-height: 1.6;">
+            <code>.</code> = any character &nbsp;|&nbsp;
+            <code>*</code> = 0 or more &nbsp;|&nbsp;
+            <code>+</code> = 1 or more &nbsp;|&nbsp;
+            <code>?</code> = optional &nbsp;|&nbsp;
+            <code>^</code> = start &nbsp;|&nbsp;
+            <code>$</code> = end<br>
+            <code>\d</code> = digit &nbsp;|&nbsp;
+            <code>\w</code> = word char &nbsp;|&nbsp;
+            <code>\s</code> = whitespace &nbsp;|&nbsp;
+            <code>[abc]</code> = a, b, or c &nbsp;|&nbsp;
+            <code>(a|b)</code> = a OR b
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-modal-footer">
+        <button id="closeRegexHelperBtn" class="rule-btn rule-btn-cancel">Close</button>
+      </div>
+    </div>
+  </div>

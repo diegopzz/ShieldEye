@@ -1,0 +1,13 @@
+{
+  "name": "Font Fingerprinting",
+  "category": "Fingerprinting",
+  "icon": "custom.png",
+  "color": "#f59e0b",
+  "detection": {
+    "content": [
+      { "content": "document.fonts", "confidence": 80 },
+      { "content": "measureText", "confidence": 85 }
+    ]
+  }
+}
+

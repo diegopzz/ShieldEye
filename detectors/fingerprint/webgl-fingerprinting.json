@@ -1,0 +1,73 @@
+{
+  "id": "webgl-fingerprinting",
+  "name": "WebGL Fingerprinting",
+  "category": "Fingerprinting",
+  "color": "#7c3aed",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://en.wikipedia.org/wiki/WebGL",
+  "icon": "custom.png",
+  "description": "WebGL-based graphics hardware and driver fingerprinting",
+  "detection": {
+    "content": [
+      {
+        "content": "getContext('webgl')",
+        "confidence": 90,
+        "description": "WebGL context creation"
+      },
+      {
+        "content": "getContext('experimental-webgl')",
+        "confidence": 85,
+        "description": "Experimental WebGL context"
+      },
+      {
+        "content": "gl.getParameter(",
+        "confidence": 95,
+        "description": "WebGL parameter extraction"
+      },
+      {
+        "content": "RENDERER",
+        "confidence": 80,
+        "description": "Graphics renderer information"
+      },
+      {
+        "content": "VENDOR",
+        "confidence": 80,
+        "description": "Graphics vendor information"
+      },
+      {
+        "content": "VERSION",
+        "confidence": 70,
+        "description": "WebGL version information"
+      },
+      {
+        "content": "UNMASKED_VENDOR_WEBGL",
+        "confidence": 100,
+        "description": "Unmasked vendor WebGL extension"
+      },
+      {
+        "content": "UNMASKED_RENDERER_WEBGL",
+        "confidence": 100,
+        "description": "Unmasked renderer WebGL extension"
+      },
+      {
+        "content": "getExtension(",
+        "confidence": 75,
+        "description": "WebGL extensions enumeration"
+      },
+      {
+        "content": "getSupportedExtensions(",
+        "confidence": 90,
+        "description": "Supported WebGL extensions list"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "canvas[style*='display: none']",
+        "confidence": 60,
+        "description": "Hidden canvas elements for fingerprinting"
+      }
+    ]
+  }
+}

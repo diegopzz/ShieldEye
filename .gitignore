@@ -1,0 +1,84 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+*.swp
+*.swo
+*~
+
+# Claude AI files
+.claude/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and debug files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies (in case you add any later)
+node_modules/
+bower_components/
+
+# Build outputs
+dist/
+build/
+out/
+*.crx
+*.pem
+*.zip
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Test files and examples
+test-*.html
+test-*.js
+old example of recaptcha capture/
+
+# Local configuration files
+.claude/settings.local.json
+*.local.json
+config.local.js
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# Chrome extension specific
+# Keep manifest.json and other required files
+# Exclude packed extensions
+*.crx
+*.pem
+
+# Documentation that might be auto-generated
+docs/_build/
+*.pdf
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Cache files
+.cache/
+*.cache
+
+# Personal notes or todo files
+TODO.txt
+NOTES.txt
+notes.txt
+todo.txt
+Claude.md
+/.lh

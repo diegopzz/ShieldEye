@@ -1,0 +1,91 @@
+<!-- History Tab Template -->
+  <div class="history-header">
+    <div class="header-actions">
+      <div class="search-container">
+        <input type="text" id="historySearch" class="search-input" placeholder="Search by URL, detector name or category...">
+      </div>
+      <button id="exportHistoryBtn" class="export-btn" title="Export history">
+        Export
+      </button>
+      <button id="importHistoryBtn" class="import-btn" title="Import history">
+        Import
+      </button>
+      <input type="file" id="importHistoryFile" accept=".json" style="display: none;">
+      <button id="clearHistoryBtn" class="clear-btn" title="Clear history">
+        <svg width="12" height="12" viewBox="0 0 24 24">
+          <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" fill="currentColor"/>
+        </svg>
+        Clear
+      </button>
+    </div>
+  </div>
+  <div id="historyList" class="history-list"></div>
+
+  <div id="historyPagination" class="pagination">
+    <div class="pagination-info">Showing 1-10 of 0</div>
+    <div class="pagination-controls">
+      <button class="pagination-btn pagination-btn-prev" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12Z" fill="currentColor"/>
+        </svg>
+      </button>
+      <div class="page-numbers"></div>
+      <button class="pagination-btn pagination-btn-next" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path d="M10 6L8.59 7.41L13.17 12L8.59 16.59L10 18L16 12Z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="historyEmpty" class="empty-state" style="display: none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.5">
+      <path d="M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z" stroke="currentColor" stroke-width="2" fill="none"/>
+    </svg>
+    <h3>No history yet</h3>
+    <p>Detection history will appear here as you browse websites.</p>
+  </div>
+
+  <!-- History Detail Modal -->
+  <div id="historyDetailModal" class="history-modal" style="display: none;">
+    <div class="history-modal-overlay"></div>
+    <div class="history-modal-container">
+      <div class="history-modal-header">
+        <div class="history-modal-title-section">
+          <img id="historyModalFavicon" class="history-modal-favicon" src="" alt="Favicon">
+          <div class="history-modal-title-info">
+            <h3 id="historyModalTitle">Page Title</h3>
+            <a id="historyModalUrl" class="history-modal-url" href="#" target="_blank">URL</a>
+          </div>
+        </div>
+        <button id="historyModalClose" class="history-modal-close" title="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+      <div class="history-modal-meta">
+        <div class="history-modal-meta-info">
+          <span id="historyModalTimestamp"></span>
+          <span id="historyModalDetectionCount"></span>
+        </div>
+        <div class="history-modal-actions">
+          <button id="historyModalCopy" class="history-modal-action-btn" title="Copy all data">
+            <svg width="14" height="14" viewBox="0 0 24 24">
+              <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" fill="currentColor"/>
+            </svg>
+            Copy
+          </button>
+          <button id="historyModalExport" class="history-modal-action-btn" title="Export this history item">
+            <svg width="14" height="14" viewBox="0 0 24 24">
+              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" fill="currentColor"/>
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div id="historyModalContent" class="history-modal-content">
+        <!-- Detection details will be populated here -->
+      </div>
+    </div>
+  </div>

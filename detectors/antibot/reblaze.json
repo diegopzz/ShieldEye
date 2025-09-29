@@ -1,0 +1,63 @@
+{
+  "id": "reblaze",
+  "name": "Reblaze",
+  "category": "Anti-Bot",
+  "color": "#E91E63",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.reblaze.com/",
+  "icon": "reblaze_official.png",
+  "description": "Reblaze cloud-based web security platform with bot management",
+  "detection": {
+    "cookies": [
+      {
+        "name": "rbzid",
+        "confidence": 95,
+        "description": "Reblaze visitor ID"
+      },
+      {
+        "name": "rbzsessionid",
+        "confidence": 90,
+        "description": "Reblaze session identifier"
+      },
+      {
+        "name": "rbz*",
+        "confidence": 85,
+        "description": "Reblaze prefix cookies"
+      }
+    ],
+    "headers": [
+      {
+        "name": "Server",
+        "value": "Reblaze",
+        "confidence": 95,
+        "description": "Reblaze server header"
+      },
+      {
+        "name": "X-Reblaze-*",
+        "confidence": 90,
+        "description": "Reblaze specific headers"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "reblaze",
+        "confidence": 80,
+        "description": "Reblaze reference in URLs"
+      }
+    ],
+    "content": [
+      {
+        "content": "rbzid",
+        "confidence": 85,
+        "description": "Reblaze ID in scripts"
+      },
+      {
+        "content": "reblaze",
+        "confidence": 80,
+        "description": "Reblaze reference"
+      }
+    ]
+  }
+}

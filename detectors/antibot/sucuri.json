@@ -1,0 +1,70 @@
+{
+  "id": "sucuri",
+  "name": "Sucuri WAF",
+  "category": "Anti-Bot",
+  "color": "#8BC34A",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://sucuri.net/",
+  "icon": "sucuri_official.png",
+  "description": "Sucuri Website Security Platform with WAF and bot protection",
+  "detection": {
+    "cookies": [
+      {
+        "name": "sucuri_cloudproxy",
+        "confidence": 95,
+        "description": "Sucuri CloudProxy cookie"
+      },
+      {
+        "name": "sucuri-*",
+        "confidence": 90,
+        "description": "Sucuri prefix cookies"
+      }
+    ],
+    "headers": [
+      {
+        "name": "X-Sucuri-ID",
+        "confidence": 95,
+        "description": "Sucuri request identifier"
+      },
+      {
+        "name": "X-Sucuri-Cache",
+        "confidence": 90,
+        "description": "Sucuri cache status"
+      },
+      {
+        "name": "Server",
+        "value": "Sucuri",
+        "confidence": 95,
+        "description": "Sucuri server header"
+      },
+      {
+        "name": "X-Sucuri-Block",
+        "confidence": 100,
+        "description": "Sucuri block indicator"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "sucuri.net",
+        "confidence": 90,
+        "description": "Sucuri domain in resources"
+      }
+    ],
+    "content": [
+      {
+        "content": "sucuri",
+        "confidence": 85,
+        "description": "Sucuri reference in scripts"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "meta[name*='sucuri']",
+        "confidence": 85,
+        "description": "Sucuri meta tags"
+      }
+    ]
+  }
+}

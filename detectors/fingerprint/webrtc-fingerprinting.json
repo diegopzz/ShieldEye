@@ -1,0 +1,13 @@
+{
+  "name": "WebRTC Fingerprinting",
+  "category": "Fingerprinting",
+  "icon": "custom.png",
+  "color": "#f59e0b",
+  "detection": {
+    "content": [
+      { "content": "RTCPeerConnection", "confidence": 90 },
+      { "content": "createDataChannel", "confidence": 85 }
+    ]
+  }
+}
+

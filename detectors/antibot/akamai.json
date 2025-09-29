@@ -1,0 +1,131 @@
+{
+  "id": "akamai",
+  "name": "Akamai Bot Manager",
+  "category": "Anti-Bot",
+  "color": "#FF6B35",
+  "confidence": 100,
+  "lastUpdated": "2024-01-15",
+  "version": "1.0.0",
+  "website": "https://www.akamai.com/products/bot-manager",
+  "icon": "akamai_official.png",
+  "description": "Enterprise-grade bot management solution providing real-time detection and mitigation",
+  "detection": {
+    "cookies": [
+      {
+        "name": "_abck",
+        "confidence": 100,
+        "description": "Akamai Bot Manager tracking cookie (anti-bot required)"
+      },
+      {
+        "name": "ak_bmsc",
+        "confidence": 90,
+        "description": "Bot Manager session cookie (pixel challenge required)"
+      },
+      {
+        "name": "sbsd",
+        "confidence": 95,
+        "description": "SB-SD challenge cookie (required for sensor bypass)"
+      },
+      {
+        "name": "sbsd_o",
+        "confidence": 95,
+        "description": "Akamai challenge cookie (required for advanced protection)"
+      },
+      {
+        "name": "bm_sz",
+        "confidence": 80,
+        "description": "Browser sensor data"
+      },
+      {
+        "name": "bm_sv",
+        "confidence": 75,
+        "description": "Server validation cookie"
+      },
+      {
+        "name": "bm_mi",
+        "confidence": 70,
+        "description": "Machine identification"
+      }
+    ],
+    "headers": [
+      {
+        "name": "x-akamai-session-info",
+        "confidence": 90,
+        "description": "Akamai session header"
+      },
+      {
+        "name": "akamai-origin-hop",
+        "confidence": 85,
+        "description": "Akamai CDN hop header"
+      },
+      {
+        "name": "asdasdas",
+        "confidence": 100,
+        "description": "Test header for Akamai detection"
+      }
+    ],
+    "urls": [
+      {
+        "pattern": "/akam/",
+        "confidence": 85,
+        "description": "Akamai Bot Manager endpoint"
+      },
+      {
+        "pattern": "/.well-known/sbsd/",
+        "confidence": 95,
+        "description": "SB-SD challenge endpoint (SBSD required)"
+      }
+    ],
+    "content": [
+      {
+        "content": "ak_bmsc",
+        "confidence": 80
+      },
+      {
+        "content": "_abck",
+        "confidence": 85
+      },
+      {
+        "content": "bmak.",
+        "confidence": 90,
+        "description": "Bot Manager API namespace"
+      },
+      {
+        "content": "sensor_data",
+        "confidence": 85
+      },
+      {
+        "content": "bazadebezolkohpepadr",
+        "confidence": 95,
+        "description": "Pixel challenge HTML variable"
+      },
+      {
+        "content": "g=_\\[\\d+\\]",
+        "confidence": 90,
+        "description": "Pixel script variable pattern"
+      },
+      {
+        "content": "var _=\\[",
+        "confidence": 85,
+        "description": "Pixel array declaration"
+      }
+    ],
+    "dom": [
+      {
+        "selector": "#akam-sensor",
+        "confidence": 90,
+        "description": "Akamai sensor container"
+      },
+      {
+        "selector": ".bm-sensor-container",
+        "confidence": 85,
+        "description": "Bot Manager sensor container"
+      },
+      {
+        "selector": "[data-akamai]",
+        "confidence": 95,
+        "description": "Element with Akamai data attribute"
+      }
+    ]
+  }
+}

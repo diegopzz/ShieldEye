@@ -1,0 +1,42 @@
+{
+"antibot": {
+    "colour": "#FF5733",
+    "detectors":[
+        "akamai",
+        "cloudflare",
+        "aws-waf",
+        "f5",
+        "datadome",
+        "incapsula",
+        "perimeterx",
+        "sucuri",
+        "reblaze"
+    ]
+},
+"captcha": {
+    "colour": "#33C3FF",
+    "detectors":[
+        "hcaptcha",
+        "recaptcha",
+        "geetest",
+        "funcaptcha"
+    ]
+},
+"fingerprint": {
+    "colour": "#8D33FF",
+    "detectors":[
+        "audio-fingerprinting",
+        "canvas-fingerprinting",
+        "font-fingerprinting",
+        "webgl-fingerprinting",
+        "webrtc-fingerprinting"
+    ]
+},
+"tags":{
+    "DOM": {"colour": "#8D33FF"},
+    "HEADERS": {"colour": "#FF33A8"},
+    "COOKIES": {"colour": "#FFC133"},
+    "CONTENT": {"colour": "#33FFF3"},
+    "URLS": {"colour": "#00BCD4"}
+}
+}
