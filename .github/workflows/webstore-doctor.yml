@@ -96,7 +96,7 @@ jobs:
             status="${body##*$'\n'}"
             body="${body%$'\n'*}"
             case "$status" in
-              2*) verdict "$label item access (v1.1)" "OK - identity holds the item, so PUBLISHER_ID is the wrong one" ;;
+              2*) verdict "$label item access (v1.1)" "OK - identity holds the item" ;;
               *)  verdict "$label item access (v1.1)" "HTTP $status $(printf '%s' "$body" | jq -r '.error.status // .error.errors[0].reason // "?"')" ;;
             esac
           }
@@ -111,10 +111,11 @@ jobs:
 
           cat <<'NOTE'
 
-          PERMISSION_DENIED on fetchStatus means the identity is not on the publisher
-          that owns this item: add it under Developer Dashboard > Account (service
-          account), or mint the refresh token from the Google account that owns the
-          item. A wrong PUBLISHER_ID produces the same status.
+          v2 PERMISSION_DENIED with v1.1 OK means the identity holds the item and only
+          PUBLISHER_ID is wrong - take it from Developer Dashboard > Publisher > Settings.
+          Both failing means the identity was never granted the item: add the service
+          account under Developer Dashboard > Account, or mint the refresh token from
+          the Google account that owns the item.
           NOTE
 
       - name: Read the item through webstore.sh
@@ -125,4 +126,5 @@ jobs:
         run: |
           # Read-only, so it exercises the exact auth and fallback path a release takes
           # without touching the listing. Item ids in the body are masked as secrets.
-          .github/scripts/webstore.sh status | jq -r '{kind, id, uploadState, itemError} | del(.. | nulls)'
+          # Ids are dropped rather than shown as masked noise; the state fields are the point.
+          .github/scripts/webstore.sh status | jq 'del(.id, .name, .kind)'
