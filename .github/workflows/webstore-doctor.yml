@@ -127,4 +127,4 @@ jobs:
           # Read-only, so it exercises the exact auth and fallback path a release takes
           # without touching the listing. Item ids in the body are masked as secrets.
           # Ids are dropped rather than shown as masked noise; the state fields are the point.
-          .github/scripts/webstore.sh status | jq 'del(.id, .name, .kind)'
+          .github/scripts/webstore.sh status | jq 'del(.id, .name, .kind, .itemId, .publicKey)'
