@@ -1,0 +1,103 @@
+name: Chrome Web Store Doctor
+
+# Publishing has never once succeeded from CI, and both API generations answer a
+# wrong id and a missing grant with the same opaque 403. This job probes each link
+# of the chain separately so the broken one is named. Repository logs are public:
+# every line below is a verdict, never an id, token, or account address.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Probe credentials and item access
+        env:
+          EXTENSION_ID: ${{ secrets.WEBSTORE_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
+          CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
+          WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
+          # Store listing linked from README.md, so this one is public by definition.
+          PUBLIC_EXTENSION_ID: pdpakdgmjhkfimgaihlgaaiijlbilkca
+        run: |
+          set -uo pipefail
+
+          verdict() { printf '%-38s %s\n' "$1" "$2"; }
+
+          for name in WEBSTORE_EXTENSION_ID:EXTENSION_ID WEBSTORE_PUBLISHER_ID:PUBLISHER_ID \
+                      WEBSTORE_CLIENT_ID:CLIENT_ID WEBSTORE_CLIENT_SECRET:CLIENT_SECRET \
+                      WEBSTORE_REFRESH_TOKEN:REFRESH_TOKEN \
+                      WEBSTORE_SERVICE_ACCOUNT_KEY:WEBSTORE_SERVICE_ACCOUNT_KEY; do
+            secret="${name%%:*}"; var="${name##*:}"
+            [ -n "${!var:-}" ] && verdict "$secret" "set" || verdict "$secret" "EMPTY"
+          done
+
+          if [ "${EXTENSION_ID:-}" = "$PUBLIC_EXTENSION_ID" ]; then
+            verdict "extension id vs store listing" "match"
+          else
+            verdict "extension id vs store listing" "MISMATCH - secret does not address the published item"
+          fi
+
+          # A publisher id is a long digit string; an extension id is 32 lowercase letters.
+          # Pasting the extension id into the publisher secret is the most common mix-up.
+          case "${PUBLISHER_ID:-}" in
+            '')                 verdict "publisher id shape" "EMPTY" ;;
+            *[!0-9]*)           verdict "publisher id shape" "NOT NUMERIC - expected the digits from Publisher > Settings" ;;
+            *)                  verdict "publisher id shape" "numeric" ;;
+          esac
+
+          probe() {
+            local label="$1" token="$2"
+            if [ -z "$token" ] || [ "$token" = "null" ]; then
+              verdict "$label token" "FAILED to mint"
+              return
+            fi
+            verdict "$label token" "minted"
+
+            local info scopes domain
+            info="$(curl -sS "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}")"
+            scopes="$(printf '%s' "$info" | jq -r '.scope // ""')"
+            case "$scopes" in
+              *chromewebstore*) verdict "$label scope" "chromewebstore granted" ;;
+              *)                verdict "$label scope" "MISSING chromewebstore scope" ;;
+            esac
+            # Domain only: which org the identity belongs to is the diagnostic, the
+            # address itself is not something a public log should carry.
+            domain="$(printf '%s' "$info" | jq -r '.email // ""' | sed 's/.*@//')"
+            [ -n "$domain" ] && verdict "$label identity domain" "$domain"
+
+            local body status
+            body="$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${token}" \
+              "https://chromewebstore.googleapis.com/v2/publishers/${PUBLISHER_ID}/items/${EXTENSION_ID}:fetchStatus")"
+            status="${body##*$'\n'}"
+            body="${body%$'\n'*}"
+            case "$status" in
+              2*) verdict "$label item access" "OK - can read the item" ;;
+              *)  verdict "$label item access" "HTTP $status $(printf '%s' "$body" | jq -r '.error.status // "?"')" ;;
+            esac
+          }
+
+          if [ -n "${WEBSTORE_SERVICE_ACCOUNT_KEY:-}" ]; then
+            probe "service account" "$(.github/scripts/webstore.sh token 2>/dev/null || true)"
+          fi
+
+          if [ -n "${CLIENT_ID:-}" ] && [ -n "${REFRESH_TOKEN:-}" ]; then
+            probe "refresh token" "$(WEBSTORE_SERVICE_ACCOUNT_KEY= .github/scripts/webstore.sh token 2>/dev/null || true)"
+          fi
+
+          cat <<'NOTE'
+
+          PERMISSION_DENIED on fetchStatus means the identity is not on the publisher
+          that owns this item: add it under Developer Dashboard > Account (service
+          account), or mint the refresh token from the Google account that owns the
+          item. A wrong PUBLISHER_ID produces the same status.
+          NOTE

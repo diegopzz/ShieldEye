@@ -21,18 +21,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Validate required secrets
         env:
           WEBSTORE_EXTENSION_ID: ${{ secrets.WEBSTORE_EXTENSION_ID }}
           WEBSTORE_PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
-          WEBSTORE_CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
-          WEBSTORE_CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
-          WEBSTORE_REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
+          WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
         run: |
           set -euo pipefail
           missing=()
 
-          for var_name in WEBSTORE_EXTENSION_ID WEBSTORE_PUBLISHER_ID WEBSTORE_CLIENT_ID WEBSTORE_CLIENT_SECRET WEBSTORE_REFRESH_TOKEN; do
+          for var_name in WEBSTORE_EXTENSION_ID WEBSTORE_PUBLISHER_ID WEBSTORE_SERVICE_ACCOUNT_KEY; do
             if [ -z "${!var_name:-}" ]; then
               missing+=("$var_name")
             fi
@@ -109,23 +110,16 @@ jobs:
         env:
           EXTENSION_ID: ${{ secrets.WEBSTORE_EXTENSION_ID }}
           PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
-          CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
-        run: |
-          set -euo pipefail
-          npx --yes chrome-webstore-upload-cli@4 upload \
-            --source "${{ steps.verify_asset.outputs.asset_path }}"
+          WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
+        run: .github/scripts/webstore.sh upload "${{ steps.verify_asset.outputs.asset_path }}"
 
       - name: Publish Chrome Web Store release
         if: inputs.publish
         env:
           EXTENSION_ID: ${{ secrets.WEBSTORE_EXTENSION_ID }}
           PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
-          CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
-        run: npx --yes chrome-webstore-upload-cli@4 publish
+          WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
+        run: .github/scripts/webstore.sh publish
 
       - name: Write run summary
         run: |
