@@ -114,3 +114,13 @@ jobs:
           account), or mint the refresh token from the Google account that owns the
           item. A wrong PUBLISHER_ID produces the same status.
           NOTE
+
+      - name: Read the item through webstore.sh
+        env:
+          EXTENSION_ID: ${{ secrets.WEBSTORE_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
+          WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          # Read-only, so it exercises the exact auth and fallback path a release takes
+          # without touching the listing. Item ids in the body are masked as secrets.
+          .github/scripts/webstore.sh status | jq -r '{kind, id, uploadState, itemError} | del(.. | nulls)'
