@@ -31,9 +31,10 @@ b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 # Self-signed JWT assertion: avoids the IAM Credentials API, so the service account
 # needs no roles at all in its GCP project (only the Dashboard grant matters).
 token_from_service_account() {
-  local key_file sa_email now exp header claims signing_input signature response
+  local key_file sa_email now exp header claims signing_input signature response token
+  # A RETURN trap set here would stay installed for every later function, so the key
+  # file is removed inline the moment signing is done instead.
   key_file="$(mktemp)"
-  trap 'rm -f "$key_file"' RETURN
 
   printf '%s' "$WEBSTORE_SERVICE_ACCOUNT_KEY" | jq -r '.private_key' > "$key_file"
   sa_email="$(printf '%s' "$WEBSTORE_SERVICE_ACCOUNT_KEY" | jq -r '.client_email')"
@@ -46,11 +47,11 @@ token_from_service_account() {
 
   signing_input="$(printf '%s' "$header" | b64url).$(printf '%s' "$claims" | b64url)"
   signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign "$key_file" -binary | b64url)"
+  rm -f "$key_file"
 
   response="$(curl -sS -X POST https://oauth2.googleapis.com/token \
     --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer' \
     --data-urlencode "assertion=${signing_input}.${signature}")"
-  local token
   token="$(printf '%s' "$response" | jq -r '.access_token // empty')"
   if [ -z "$token" ]; then
     echo "service account token exchange failed: $(printf '%s' "$response" | jq -r '.error // "unknown"')" >&2
@@ -60,13 +61,12 @@ token_from_service_account() {
 }
 
 token_from_refresh_token() {
-  local response
+  local response token
   response="$(curl -sS https://oauth2.googleapis.com/token \
     --data-urlencode "client_id=${CLIENT_ID}" \
     --data-urlencode "client_secret=${CLIENT_SECRET}" \
     --data-urlencode "refresh_token=${REFRESH_TOKEN}" \
     --data-urlencode 'grant_type=refresh_token')"
-  local token
   token="$(printf '%s' "$response" | jq -r '.access_token // empty')"
   if [ -z "$token" ]; then
     echo "refresh token exchange failed: $(printf '%s' "$response" | jq -r '.error // "unknown"')" >&2
