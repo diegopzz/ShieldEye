@@ -47,13 +47,15 @@ jobs:
             verdict "extension id vs store listing" "MISMATCH - secret does not address the published item"
           fi
 
-          # A publisher id is a long digit string; an extension id is 32 lowercase letters.
-          # Pasting the extension id into the publisher secret is the most common mix-up.
-          case "${PUBLISHER_ID:-}" in
-            '')                 verdict "publisher id shape" "EMPTY" ;;
-            *[!0-9]*)           verdict "publisher id shape" "NOT NUMERIC - expected the digits from Publisher > Settings" ;;
-            *)                  verdict "publisher id shape" "numeric" ;;
-          esac
+          # A publisher id is a UUID (Publisher > Settings); an extension id is 32
+          # lowercase letters. Pasting the extension id here is the common mix-up.
+          if [ -z "${PUBLISHER_ID:-}" ]; then
+            verdict "publisher id shape" "EMPTY"
+          elif printf '%s' "$PUBLISHER_ID" | grep -qiE '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'; then
+            verdict "publisher id shape" "uuid"
+          else
+            verdict "publisher id shape" "NOT A UUID - expected the value from Publisher > Settings"
+          fi
 
           probe() {
             local label="$1" token="$2"
