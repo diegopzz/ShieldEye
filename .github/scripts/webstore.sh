@@ -2,27 +2,22 @@
 # Chrome Web Store API v2 client.
 #
 # v2 addresses items as publishers/<publisher>/items/<extension>, so PUBLISHER_ID
-# must be the publisher that OWNS the item (Developer Dashboard > Publisher >
-# Settings). A publisher/item pair the caller cannot reach returns 403
-# PERMISSION_DENIED, worded "or it might not exist" - it never distinguishes a wrong
-# id from a missing grant, which is why `status` exists as a standalone probe.
+# must be the publisher that OWNS the item. It is a UUID from Developer Dashboard >
+# Publisher > Settings, not the digit string the API docs' phrasing suggests. A
+# publisher/item pair the caller cannot reach returns 403 PERMISSION_DENIED, worded
+# "or it might not exist" - it never distinguishes a wrong id from a missing grant,
+# which is why `status` exists as a standalone probe.
 #
-# The superseded v1.1 endpoints address the item with no publisher segment, so they
-# still work while PUBLISHER_ID is wrong or unset. They are the fallback, never the
-# first choice: Google has announced their retirement, and the day they stop
-# answering, a release that silently depended on them would break with no warning.
-#
-# Auth: a service account added under Developer Dashboard > Account (preferred, no
-# human in the loop, no 7-day test-mode token expiry), or the legacy installed-app
-# refresh token. Only one of the two needs to be configured.
+# Auth is the service account added under Developer Dashboard > Account. The older
+# installed-app refresh token is gone: it authenticated as a person, expired on its
+# own schedule, and could not be rotated without that person running an OAuth flow.
 set -euo pipefail
 
 : "${EXTENSION_ID:?EXTENSION_ID is required}"
-PUBLISHER_ID="${PUBLISHER_ID:-}"
+: "${PUBLISHER_ID:?PUBLISHER_ID is required}"
+: "${WEBSTORE_SERVICE_ACCOUNT_KEY:?WEBSTORE_SERVICE_ACCOUNT_KEY is required}"
 
 API="https://chromewebstore.googleapis.com"
-LEGACY_API="https://www.googleapis.com/chromewebstore/v1.1"
-LEGACY_UPLOAD_API="https://www.googleapis.com/upload/chromewebstore/v1.1"
 SCOPE="https://www.googleapis.com/auth/chromewebstore"
 ITEM="publishers/${PUBLISHER_ID}/items/${EXTENSION_ID}"
 
@@ -30,7 +25,7 @@ b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 
 # Self-signed JWT assertion: avoids the IAM Credentials API, so the service account
 # needs no roles at all in its GCP project (only the Dashboard grant matters).
-token_from_service_account() {
+access_token() {
   local key_file sa_email now exp header claims signing_input signature response token
   # A RETURN trap set here would stay installed for every later function, so the key
   # file is removed inline the moment signing is done instead.
@@ -60,66 +55,19 @@ token_from_service_account() {
   printf '%s' "$token"
 }
 
-token_from_refresh_token() {
-  local response token
-  response="$(curl -sS https://oauth2.googleapis.com/token \
-    --data-urlencode "client_id=${CLIENT_ID}" \
-    --data-urlencode "client_secret=${CLIENT_SECRET}" \
-    --data-urlencode "refresh_token=${REFRESH_TOKEN}" \
-    --data-urlencode 'grant_type=refresh_token')"
-  token="$(printf '%s' "$response" | jq -r '.access_token // empty')"
-  if [ -z "$token" ]; then
-    echo "refresh token exchange failed: $(printf '%s' "$response" | jq -r '.error // "unknown"')" >&2
-    return 1
-  fi
-  printf '%s' "$token"
-}
-
-access_token() {
-  if [ -n "${WEBSTORE_SERVICE_ACCOUNT_KEY:-}" ]; then
-    token_from_service_account
-  elif [ -n "${CLIENT_ID:-}" ] && [ -n "${REFRESH_TOKEN:-}" ]; then
-    token_from_refresh_token
-  else
-    echo "no credentials: set WEBSTORE_SERVICE_ACCOUNT_KEY, or CLIENT_ID/CLIENT_SECRET/REFRESH_TOKEN" >&2
-    return 1
-  fi
-}
-
 # Every call prints the body then fails on a non-2xx, so a PERMISSION_DENIED reaches
 # the log instead of being flattened into a bare "exit code 22" by curl -f.
-LAST_STATUS=""
 call() {
   local method="$1" url="$2"; shift 2
-  local body
+  local body status
   body="$(curl -sS -X "$method" -H "Authorization: Bearer ${TOKEN}" -w '\n%{http_code}' "$@" "$url")"
-  LAST_STATUS="${body##*$'\n'}"
+  status="${body##*$'\n'}"
   body="${body%$'\n'*}"
   echo "$body"
-  case "$LAST_STATUS" in
+  case "$status" in
     2*) return 0 ;;
-    *)  echo "HTTP $LAST_STATUS" >&2; return 1 ;;
+    *)  echo "HTTP $status" >&2; return 1 ;;
   esac
-}
-
-# v2 first, v1.1 only when the publisher segment is the thing v2 rejected.
-call_with_fallback() {
-  local v2_method="$1" v2_url="$2" legacy_method="$3" legacy_url="$4"; shift 4
-
-  if [ -n "$PUBLISHER_ID" ]; then
-    if call "$v2_method" "$v2_url" "$@"; then
-      return 0
-    fi
-    if [ "$LAST_STATUS" != "403" ] && [ "$LAST_STATUS" != "404" ]; then
-      return 1
-    fi
-    echo "PUBLISHER_ID does not address this item on the v2 API; retrying on v1.1." >&2
-    echo "Fix the secret from Developer Dashboard > Publisher > Settings - v1.1 is retiring." >&2
-  else
-    echo "PUBLISHER_ID is unset; using the retiring v1.1 API." >&2
-  fi
-
-  call "$legacy_method" "$legacy_url" "$@"
 }
 
 command="${1:-}"
@@ -129,17 +77,13 @@ case "$command" in
     ;;
   status)
     TOKEN="$(access_token)"
-    call_with_fallback \
-      GET "${API}/v2/${ITEM}:fetchStatus" \
-      GET "${LEGACY_API}/items/${EXTENSION_ID}?projection=DRAFT"
+    call GET "${API}/v2/${ITEM}:fetchStatus"
     ;;
   upload)
     package="${2:?usage: webstore.sh upload <package.zip>}"
     TOKEN="$(access_token)"
     # Raw upload protocol; the store rejects a package whose manifest version was not bumped.
-    call_with_fallback \
-      POST "${API}/upload/v2/${ITEM}:upload" \
-      PUT "${LEGACY_UPLOAD_API}/items/${EXTENSION_ID}" \
+    call POST "${API}/upload/v2/${ITEM}:upload" \
       -H 'X-Goog-Upload-Protocol: raw' \
       -H 'X-Goog-Upload-File-Name: extension.zip' \
       -H 'Content-Type: application/zip' \
@@ -149,10 +93,7 @@ case "$command" in
     TOKEN="$(access_token)"
     # Publishes with the listing's existing visibility; a visibility changed in the
     # Dashboard must be published manually once before the API can publish again.
-    call_with_fallback \
-      POST "${API}/v2/${ITEM}:publish" \
-      POST "${LEGACY_API}/items/${EXTENSION_ID}/publish" \
-      -H 'Content-Length: 0'
+    call POST "${API}/v2/${ITEM}:publish" -H 'Content-Length: 0'
     ;;
   *)
     echo "usage: webstore.sh {token|status|upload <package.zip>|publish}" >&2

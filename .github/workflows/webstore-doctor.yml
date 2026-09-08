@@ -1,9 +1,9 @@
 name: Chrome Web Store Doctor
 
-# Publishing has never once succeeded from CI, and both API generations answer a
-# wrong id and a missing grant with the same opaque 403. This job probes each link
-# of the chain separately so the broken one is named. Repository logs are public:
-# every line below is a verdict, never an id, token, or account address.
+# Publishing failed for nine months because a wrong publisher id and a missing grant
+# both surface as the same opaque 403. This job probes each link of the chain
+# separately so the broken one is named. Repository logs are public: every line below
+# is a verdict, never an id, token, or account address.
 
 on:
   workflow_dispatch:
@@ -22,9 +22,6 @@ jobs:
         env:
           EXTENSION_ID: ${{ secrets.WEBSTORE_EXTENSION_ID }}
           PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
-          CLIENT_ID: ${{ secrets.WEBSTORE_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.WEBSTORE_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.WEBSTORE_REFRESH_TOKEN }}
           WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
           # Store listing linked from README.md, so this one is public by definition.
           PUBLIC_EXTENSION_ID: pdpakdgmjhkfimgaihlgaaiijlbilkca
@@ -34,8 +31,6 @@ jobs:
           verdict() { printf '%-38s %s\n' "$1" "$2"; }
 
           for name in WEBSTORE_EXTENSION_ID:EXTENSION_ID WEBSTORE_PUBLISHER_ID:PUBLISHER_ID \
-                      WEBSTORE_CLIENT_ID:CLIENT_ID WEBSTORE_CLIENT_SECRET:CLIENT_SECRET \
-                      WEBSTORE_REFRESH_TOKEN:REFRESH_TOKEN \
                       WEBSTORE_SERVICE_ACCOUNT_KEY:WEBSTORE_SERVICE_ACCOUNT_KEY; do
             secret="${name%%:*}"; var="${name##*:}"
             [ -n "${!var:-}" ] && verdict "$secret" "set" || verdict "$secret" "EMPTY"
@@ -57,65 +52,34 @@ jobs:
             verdict "publisher id shape" "NOT A UUID - expected the value from Publisher > Settings"
           fi
 
-          probe() {
-            local label="$1" token="$2"
-            if [ -z "$token" ] || [ "$token" = "null" ]; then
-              verdict "$label token" "FAILED to mint"
-              return
-            fi
-            verdict "$label token" "minted"
-
-            local info scopes domain
-            info="$(curl -sS "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}")"
-            scopes="$(printf '%s' "$info" | jq -r '.scope // ""')"
-            case "$scopes" in
-              *chromewebstore*) verdict "$label scope" "chromewebstore granted" ;;
-              *)                verdict "$label scope" "MISSING chromewebstore scope" ;;
-            esac
-            # Domain only: which org the identity belongs to is the diagnostic, the
-            # address itself is not something a public log should carry.
-            domain="$(printf '%s' "$info" | jq -r '.email // ""' | sed 's/.*@//')"
-            [ -n "$domain" ] && verdict "$label identity domain" "$domain"
-
-            local body status
-            body="$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${token}" \
-              "https://chromewebstore.googleapis.com/v2/publishers/${PUBLISHER_ID}/items/${EXTENSION_ID}:fetchStatus")"
-            status="${body##*$'\n'}"
-            body="${body%$'\n'*}"
-            case "$status" in
-              2*) verdict "$label item access (v2)" "OK - can read the item" ;;
-              *)  verdict "$label item access (v2)" "HTTP $status $(printf '%s' "$body" | jq -r '.error.status // "?"')" ;;
-            esac
-
-            # The retired v1.1 endpoint addresses the item WITHOUT a publisher segment,
-            # so it separates the two causes v2 folds into one 403: a 2xx here means the
-            # identity does hold the item and only PUBLISHER_ID is wrong, while a 403
-            # here means the identity was never granted the item at all.
-            body="$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${token}" \
-              "https://www.googleapis.com/chromewebstore/v1.1/items/${EXTENSION_ID}?projection=DRAFT")"
-            status="${body##*$'\n'}"
-            body="${body%$'\n'*}"
-            case "$status" in
-              2*) verdict "$label item access (v1.1)" "OK - identity holds the item" ;;
-              *)  verdict "$label item access (v1.1)" "HTTP $status $(printf '%s' "$body" | jq -r '.error.status // .error.errors[0].reason // "?"')" ;;
-            esac
-          }
-
-          if [ -n "${WEBSTORE_SERVICE_ACCOUNT_KEY:-}" ]; then
-            probe "service account" "$(.github/scripts/webstore.sh token 2>/dev/null || true)"
+          token="$(.github/scripts/webstore.sh token 2>/dev/null || true)"
+          if [ -z "$token" ]; then
+            verdict "service account token" "FAILED to mint"
+            exit 1
           fi
+          verdict "service account token" "minted"
 
-          if [ -n "${CLIENT_ID:-}" ] && [ -n "${REFRESH_TOKEN:-}" ]; then
-            probe "refresh token" "$(WEBSTORE_SERVICE_ACCOUNT_KEY= .github/scripts/webstore.sh token 2>/dev/null || true)"
-          fi
+          info="$(curl -sS "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}")"
+          case "$(printf '%s' "$info" | jq -r '.scope // ""')" in
+            *chromewebstore*) verdict "service account scope" "chromewebstore granted" ;;
+            *)                verdict "service account scope" "MISSING chromewebstore scope" ;;
+          esac
+
+          body="$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${token}" \
+            "https://chromewebstore.googleapis.com/v2/publishers/${PUBLISHER_ID}/items/${EXTENSION_ID}:fetchStatus")"
+          status="${body##*$'\n'}"
+          body="${body%$'\n'*}"
+          case "$status" in
+            2*) verdict "item access" "OK - can read the item" ;;
+            *)  verdict "item access" "HTTP $status $(printf '%s' "$body" | jq -r '.error.status // "?"')" ;;
+          esac
 
           cat <<'NOTE'
 
-          v2 PERMISSION_DENIED with v1.1 OK means the identity holds the item and only
-          PUBLISHER_ID is wrong - take it from Developer Dashboard > Publisher > Settings.
-          Both failing means the identity was never granted the item: add the service
-          account under Developer Dashboard > Account, or mint the refresh token from
-          the Google account that owns the item.
+          PERMISSION_DENIED means either PUBLISHER_ID does not name the publisher that
+          owns this item (Developer Dashboard > Publisher > Settings), or the service
+          account was never added under Developer Dashboard > Account. The API answers
+          both the same way, so check the Account page first: it is the cheaper of the two.
           NOTE
 
       - name: Read the item through webstore.sh
@@ -124,7 +88,6 @@ jobs:
           PUBLISHER_ID: ${{ secrets.WEBSTORE_PUBLISHER_ID }}
           WEBSTORE_SERVICE_ACCOUNT_KEY: ${{ secrets.WEBSTORE_SERVICE_ACCOUNT_KEY }}
         run: |
-          # Read-only, so it exercises the exact auth and fallback path a release takes
-          # without touching the listing. Item ids in the body are masked as secrets.
-          # Ids are dropped rather than shown as masked noise; the state fields are the point.
+          # Read-only, so it exercises the exact auth path a release takes without
+          # touching the listing. Ids and the public key are dropped as noise.
           .github/scripts/webstore.sh status | jq 'del(.id, .name, .kind, .itemId, .publicKey)'
